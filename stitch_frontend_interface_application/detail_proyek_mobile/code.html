@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project Detail - Enterprise Cloud Infrastructure</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4059aa",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#574500",
+                    "inverse-on-surface": "#f1f0f7",
+                    "surface-variant": "#e3e1e9",
+                    "tertiary-container": "#6e2c00",
+                    "surface-dim": "#dad9e1",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#e3e1e9",
+                    "on-surface": "#1a1b21",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#eec200",
+                    "on-surface-variant": "#444651",
+                    "surface": "#faf8ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#faf8ff",
+                    "secondary-fixed": "#ffe083",
+                    "on-tertiary-container": "#f39461",
+                    "on-secondary-container": "#6f5900",
+                    "on-secondary-fixed": "#231b00",
+                    "inverse-primary": "#b6c4ff",
+                    "background": "#faf8ff",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary-fixed-variant": "#264191",
+                    "on-error": "#ffffff",
+                    "primary-container": "#1e3a8a",
+                    "on-background": "#1a1b21",
+                    "outline": "#757682",
+                    "inverse-surface": "#2f3036",
+                    "tertiary": "#4b1c00",
+                    "surface-container-low": "#f4f3fa",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#00164e",
+                    "surface-container-high": "#e9e7ef",
+                    "primary-fixed": "#dce1ff",
+                    "on-tertiary-fixed-variant": "#773205",
+                    "on-primary-container": "#90a8ff",
+                    "secondary": "#735c00",
+                    "outline-variant": "#c5c5d3",
+                    "error": "#ba1a1a",
+                    "primary": "#00236f",
+                    "tertiary-fixed": "#ffdbcb",
+                    "on-tertiary-fixed": "#341100",
+                    "tertiary-fixed-dim": "#ffb691",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#fed01b",
+                    "surface-container": "#eeedf4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "container-margin": "24px",
+                    "xxl": "48px",
+                    "sm": "8px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-base": ["Manrope"],
+                    "label-sm": ["Manrope"],
+                    "headline-md": ["Manrope"],
+                    "body-lg": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-sm": ["Manrope"],
+                    "label-md": ["Manrope"],
+                    "headline-xl": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        .tab-active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #00236f;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-surface/80 backdrop-blur-md text-primary border-b border-outline-variant/30 sticky top-0 w-full flex justify-between items-center px-6 h-16 z-50">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined p-2 hover:bg-surface-container-high transition-colors rounded-full">menu</button>
+<h1 class="text-headline-md font-bold">Detail Proyek</h1>
+</div>
+<div class="flex items-center gap-4">
+<img alt="User profile" class="w-10 h-10 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChM7FBg1UUOM1yAUVydkT4Efgbav62r60aSfZ0dNYC0nUx84EuTQmMGv6rkMfqo6QnUwXdU5YPJ5nOUcH0_jlNp8ZPzYY1Ovtte8XofZWDbjEBORFsh80cgFC5dH3_X3QXzPJRyaPefL-aK9peIH3yRagQ_ujuZnSNpkR73MAal-hZYJCcXp3Tjrj2b67ElezPOv8YupAFDQR3vOLTWjnhay3WaJdLOJfsl-bLthsly9g5iX6zbp20jU0BVg3iuy__XDcJW-frFQ"/>
+</div>
+</header>
+<main class="max-w-4xl mx-auto px-6 py-8 pb-32">
+<!-- Project Hero -->
+<div class="mb-8">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-on-surface-variant text-label-sm uppercase tracking-wider mb-1">PH-2024-001</p>
+<h2 class="text-headline-xl text-primary leading-tight">Enterprise Cloud Infrastructure</h2>
+</div>
+<span class="bg-primary/5 text-primary text-label-sm px-3 py-1 rounded-full border border-primary/20">Active</span>
+</div>
+<p class="text-body-base text-on-surface-variant mb-8 max-w-2xl">Architecting a resilient multi-region cloud ecosystem to support global operations with 99.99% uptime and automated scaling capabilities.</p>
+<div class="flex flex-wrap gap-3">
+<button class="bg-primary text-on-primary px-6 py-3 rounded-lg font-label-md flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">edit</span> Edit Project
+        </button>
+<button class="bg-secondary-container text-on-secondary-container px-6 py-3 rounded-lg font-label-md flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span> New Task
+        </button>
+</div>
+</div>
+<!-- Simplified Statistics -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col">
+<span class="text-on-surface-variant text-label-sm mb-1">Total Tasks</span>
+<span class="text-headline-md font-bold text-primary">124</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col">
+<span class="text-on-surface-variant text-label-sm mb-1">Completed</span>
+<span class="text-headline-md font-bold text-primary">86</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col">
+<span class="text-on-surface-variant text-label-sm mb-1">Team Members</span>
+<span class="text-headline-md font-bold text-primary">12</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col">
+<span class="text-on-surface-variant text-label-sm mb-1">Days Remaining</span>
+<span class="text-headline-md font-bold text-primary">14</span>
+</div>
+</div>
+<!-- Clean Navigation Tabs -->
+<div class="border-b border-outline-variant/30 mb-8 overflow-x-auto">
+<nav class="flex gap-10 min-w-max">
+<button class="relative pb-4 text-label-md font-bold text-primary tab-active">Overview</button>
+<button class="pb-4 text-label-md font-semibold text-on-surface-variant hover:text-primary transition-colors">Tasks</button>
+<button class="pb-4 text-label-md font-semibold text-on-surface-variant hover:text-primary transition-colors">Milestones</button>
+<button class="pb-4 text-label-md font-semibold text-on-surface-variant hover:text-primary transition-colors">Team</button>
+<button class="pb-4 text-label-md font-semibold text-on-surface-variant hover:text-primary transition-colors">Files</button>
+</nav>
+</div>
+<div class="grid grid-cols-1 gap-10">
+<!-- Milestones Section -->
+<div>
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-headline-md text-primary">Project Milestones</h3>
+<button class="text-primary text-label-md font-bold flex items-center gap-1">
+            View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<div class="space-y-4">
+<!-- Milestone Item 1 -->
+<div class="flex items-center gap-6 p-5 bg-surface-container-lowest border border-outline-variant rounded-xl">
+<div class="relative flex-shrink-0">
+<svg class="w-12 h-12" viewbox="0 0 40 40">
+<circle class="text-surface-container-high" cx="20" cy="20" fill="transparent" r="18" stroke="currentColor" stroke-width="3"></circle>
+<circle class="text-primary progress-ring__circle" cx="20" cy="20" fill="transparent" r="18" stroke="currentColor" stroke-dasharray="113" stroke-dashoffset="28" stroke-width="3"></circle>
+</svg>
+<span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-primary">75%</span>
+</div>
+<div class="flex-grow">
+<h4 class="text-body-base font-bold text-primary">Database Migration &amp; Integrity Check</h4>
+<div class="flex items-center gap-4 mt-1">
+<div class="flex items-center gap-1.5">
+<img alt="David Chen" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb2COEIb2khgK1ZxeqbEuK3hYh_gPUFWdZgQRoDAtR7f0bmIMXLHDbaFLtFLlFwFBO8ES1OL0DI-14Wn7itmW5CEmTGfOckzYiBDwGENxW4GCr4ZG88A_5qPgtwK4RapEO3avFRieko5_ZhGaiNyxkQUmn2NfLqNO_jgQeeBoy2y3V9edO9y_z6zjlOWTCBVzOiHMUG2pT6RmqQGDz1YjtOkmnceZ7CIzcr8CiuMbqxDjNPMdgorISILsWlkzXh416PYikg2xOOw"/>
+<span class="text-label-sm text-on-surface-variant">David Chen</span>
+</div>
+<span class="text-label-sm text-on-surface-variant">•</span>
+<span class="text-label-sm text-on-surface-variant">Oct 24, 2024</span>
+</div>
+</div>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded">In Progress</span>
+</div>
+<!-- Milestone Item 2 -->
+<div class="flex items-center gap-6 p-5 bg-surface-container-lowest border border-outline-variant rounded-xl">
+<div class="relative flex-shrink-0">
+<svg class="w-12 h-12" viewbox="0 0 40 40">
+<circle class="text-surface-container-high" cx="20" cy="20" fill="transparent" r="18" stroke="currentColor" stroke-width="3"></circle>
+<circle class="text-primary progress-ring__circle" cx="20" cy="20" fill="transparent" r="18" stroke="currentColor" stroke-dasharray="113" stroke-dashoffset="0" stroke-width="3"></circle>
+</svg>
+<span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-primary">100%</span>
+</div>
+<div class="flex-grow">
+<h4 class="text-body-base font-bold text-primary">Security Audit &amp; Compliance Review</h4>
+<div class="flex items-center gap-4 mt-1">
+<div class="flex items-center gap-1.5">
+<img alt="Sarah Jenkins" class="w-5 h-5 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB142rBDZCDptlEXwJ25SMzwQSB3b2Q4_HMh26CecwXVS1q08PJndM6_s0nhahVdmV4Tl8tdeh4v_z90xYc-Q8Gm940aUHALmBqNunqRikqcnEHvOxKn1g9DGvgh7e-Ue4w2cI37x7ekpKmrY2bxMcNWnIyFQx0WKuBoqsRv6krojcfPp6rtYIw9PnxNaJ_H3q3ZbThKAUMcLUnHNpzB-fuyTwBbLOKnvMFYZNVBGvyVtf7advD1U0FnnuhsSJ76euXf_Tq49kVCg"/>
+<span class="text-label-sm text-on-surface-variant">Sarah Jenkins</span>
+</div>
+<span class="text-label-sm text-on-surface-variant">•</span>
+<span class="text-label-sm text-on-surface-variant">Sep 15, 2024</span>
+</div>
+</div>
+<span class="bg-surface-container-high text-on-surface-variant text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded">Completed</span>
+</div>
+</div>
+</div>
+<!-- Activity & Resources -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<h3 class="text-headline-md text-primary mb-6">Recent Activity</h3>
+<div class="space-y-4">
+<div class="flex gap-4">
+<div class="w-2 h-2 rounded-full bg-primary mt-2"></div>
+<div>
+<p class="text-body-sm text-on-surface-variant leading-relaxed"><span class="font-bold text-primary">Sarah J.</span> uploaded new architecture diagrams</p>
+<p class="text-label-sm text-outline mt-0.5">2 hours ago</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-2 h-2 rounded-full bg-secondary-container mt-2"></div>
+<div>
+<p class="text-body-sm text-on-surface-variant leading-relaxed"><span class="font-bold text-primary">Mark T.</span> completed "S3 Bucket Configuration"</p>
+<p class="text-label-sm text-outline mt-0.5">5 hours ago</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-headline-md text-primary mb-6">Resources</h3>
+<div class="space-y-2">
+<div class="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
+<span class="material-symbols-outlined text-primary">description</span>
+<div class="flex-grow min-w-0">
+<p class="text-label-md text-primary font-bold truncate">Project_Charter_v2.pdf</p>
+<p class="text-label-sm text-on-surface-variant">2.4 MB</p>
+</div>
+<span class="material-symbols-outlined text-outline">download</span>
+</div>
+<div class="flex items-center gap-3 p-3 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
+<span class="material-symbols-outlined text-secondary">image</span>
+<div class="flex-grow min-w-0">
+<p class="text-label-md text-primary font-bold truncate">Cloud_Architecture_Final.png</p>
+<p class="text-label-sm text-on-surface-variant">15.8 MB</p>
+</div>
+<span class="material-symbols-outlined text-outline">download</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-16 bg-surface border-t border-outline-variant/20 shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="text-[10px] font-bold">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">folder_open</span>
+<span class="text-[10px] font-bold">Projects</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">bug_report</span>
+<span class="text-[10px] font-bold">Tickets</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">calendar_today</span>
+<span class="text-[10px] font-bold">Calendar</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</div>
+</nav>
+</body></html>

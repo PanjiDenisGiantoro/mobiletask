@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ProjectHub Pro - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4059aa",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#574500",
+                    "inverse-on-surface": "#f1f0f7",
+                    "surface-variant": "#e3e1e9",
+                    "tertiary-container": "#6e2c00",
+                    "surface-dim": "#dad9e1",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#e3e1e9",
+                    "on-surface": "#1a1b21",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#eec200",
+                    "on-surface-variant": "#444651",
+                    "surface": "#faf8ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#faf8ff",
+                    "secondary-fixed": "#ffe083",
+                    "on-tertiary-container": "#f39461",
+                    "on-secondary-container": "#6f5900",
+                    "on-secondary-fixed": "#231b00",
+                    "inverse-primary": "#b6c4ff",
+                    "background": "#faf8ff",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary-fixed-variant": "#264191",
+                    "on-error": "#ffffff",
+                    "primary-container": "#1e3a8a",
+                    "on-background": "#1a1b21",
+                    "outline": "#757682",
+                    "inverse-surface": "#2f3036",
+                    "tertiary": "#4b1c00",
+                    "surface-container-low": "#f4f3fa",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#00164e",
+                    "surface-container-high": "#e9e7ef",
+                    "primary-fixed": "#dce1ff",
+                    "on-tertiary-fixed-variant": "#773205",
+                    "on-primary-container": "#90a8ff",
+                    "secondary": "#735c00",
+                    "outline-variant": "#c5c5d3",
+                    "error": "#ba1a1a",
+                    "primary": "#00236f",
+                    "tertiary-fixed": "#ffdbcb",
+                    "on-tertiary-fixed": "#341100",
+                    "tertiary-fixed-dim": "#ffb691",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#fed01b",
+                    "surface-container": "#eeedf4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "container-margin": "24px",
+                    "xxl": "48px",
+                    "sm": "8px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Manrope"],
+                    "headline-xl": ["Manrope"],
+                    "body-sm": ["Manrope"],
+                    "label-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-lg": ["Manrope"],
+                    "body-base": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; background-color: #faf8ff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-white border-b border-outline-variant flex justify-between items-center w-full px-container-margin h-16 sticky top-0 z-40">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md font-extrabold text-primary">ProjectHub Pro</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-primary p-sm hover:bg-surface-container-high rounded-full transition-opacity duration-150 active:opacity-80">
+                notifications
+            </button>
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCa76wW3j2MQ3fbhQ701ze2F86CKgEiiAgXmvJQaC8a-B0M_8lPii1LLVlLFW7c05OlBc6EPS4FxkhkIJaIy5c8JcxyAJ873xZJsEHrL6k-NkC-GkABpzeybRfsK0Cw-kUCTxjSZC11UHt4XCU4r4DJV-t9V1iy-lJFqDz5Mi9i_446EKeMO435h1MeYOU2PyM6ZpKUntIDfwR8dxvCEY-rJkRlXYow6pOSFGan7V_a5VCUvlQu0TJ2gDLgTxuUJBmx1BzjsUF0Fg"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- Sidebar Navigation (Desktop Only) -->
+<aside class="hidden lg:flex flex-col h-full py-xl bg-white border-r border-outline-variant w-72 sticky top-16">
+<nav class="flex flex-col gap-xs px-md">
+<a class="flex items-center gap-md px-lg py-md bg-secondary-container text-on-secondary-container rounded-xl font-bold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-base">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-body-base">Projects</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-body-base">Tickets</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-body-base">Calendar</span>
+</a>
+<a class="flex items-center gap-md px-lg py-md text-on-surface-variant hover:bg-surface-container transition-colors rounded-xl" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-body-base">Profile</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content -->
+<main class="flex-grow px-container-margin py-xl max-w-7xl mx-auto w-full pb-32">
+<!-- Key Metrics -->
+<section class="mb-xl">
+<div class="flex overflow-x-auto hide-scrollbar gap-lg pb-sm">
+<!-- Metric Card 1 -->
+<div class="min-w-[180px] md:min-w-[240px] flex-grow bg-white border border-outline-variant rounded-2xl p-lg shadow-sm flex flex-col gap-xs">
+<span class="text-on-surface-variant font-label-md">Active Projects</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-primary">1</span>
+<div class="bg-primary/10 p-sm rounded-lg text-primary">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</div>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="min-w-[180px] md:min-w-[240px] flex-grow bg-white border border-outline-variant rounded-2xl p-lg shadow-sm flex flex-col gap-xs">
+<span class="text-on-surface-variant font-label-md">Open Tickets</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-error">1</span>
+<div class="bg-error/10 p-sm rounded-lg text-error">
+<span class="material-symbols-outlined text-[20px]">report</span>
+</div>
+</div>
+</div>
+<!-- Metric Card 3 -->
+<div class="min-w-[180px] md:min-w-[240px] flex-grow bg-white border border-outline-variant rounded-2xl p-lg shadow-sm flex flex-col gap-xs">
+<span class="text-on-surface-variant font-label-md">Tasks Done</span>
+<div class="flex items-end justify-between">
+<span class="font-headline-lg text-headline-lg text-on-surface">12</span>
+<div class="bg-surface-container p-sm rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Tabs Navigation (Mobile/Tablet centric view) -->
+<section class="mb-xl">
+<div class="flex border-b border-outline-variant mb-xl overflow-x-auto hide-scrollbar">
+<button class="px-lg py-md border-b-2 border-primary text-primary font-bold whitespace-nowrap">Dashboard</button>
+<button class="px-lg py-md text-on-surface-variant font-label-md hover:text-primary whitespace-nowrap">Milestones</button>
+<button class="px-lg py-md text-on-surface-variant font-label-md hover:text-primary whitespace-nowrap">Tasks</button>
+<button class="px-lg py-md text-on-surface-variant font-label-md hover:text-primary whitespace-nowrap">Team</button>
+</div>
+<div class="grid grid-cols-12 gap-xl">
+<!-- Active Projects List -->
+<div class="col-span-12 lg:col-span-8 space-y-lg">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Active Projects</h2>
+<button class="text-primary font-label-md flex items-center gap-xs">
+                                View All <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<!-- Project Card -->
+<div class="bg-white border border-outline-variant rounded-2xl shadow-sm p-lg hover:shadow-md transition-shadow group">
+<div class="flex items-start justify-between mb-lg">
+<div class="flex items-center gap-md">
+<div class="w-14 h-14 bg-primary text-white rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-[32px]">architecture</span>
+</div>
+<div>
+<h3 class="font-bold text-[20px] text-on-surface group-hover:text-primary transition-colors">Enterprise Cloud Infrastructure</h3>
+<p class="text-on-surface-variant text-body-sm">Client: CloudX Corp • #PH-2024-01</p>
+</div>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-md py-xs rounded-full text-label-sm font-bold">In Progress</span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-lg py-lg border-y border-outline-variant/30">
+<div>
+<p class="text-on-surface-variant text-[12px] uppercase font-bold tracking-wider mb-1">Manager</p>
+<p class="text-body-sm font-bold">Sarah Johnson</p>
+</div>
+<div>
+<p class="text-on-surface-variant text-[12px] uppercase font-bold tracking-wider mb-1">Deadline</p>
+<p class="text-body-sm">Dec 15, 2024</p>
+</div>
+<div class="hidden md:block">
+<p class="text-on-surface-variant text-[12px] uppercase font-bold tracking-wider mb-1">Team</p>
+<p class="text-body-sm">12 Members</p>
+</div>
+</div>
+<div class="mt-lg">
+<div class="flex justify-between items-center text-label-sm mb-xs">
+<span class="text-on-surface-variant">Overall Progress</span>
+<span class="font-bold text-primary">65%</span>
+</div>
+<div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 65%;"></div>
+</div>
+</div>
+</div>
+<!-- Add Project Placeholder -->
+<div class="bg-surface-container-low border-2 border-dashed border-outline-variant rounded-2xl p-xl flex flex-col items-center justify-center text-center gap-sm">
+<span class="material-symbols-outlined text-outline text-[40px]">add_circle</span>
+<p class="text-on-surface-variant font-label-md">Start a new project to track progress</p>
+</div>
+</div>
+<!-- Sidebar Alerts/Meetings -->
+<div class="col-span-12 lg:col-span-4 space-y-xl">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-lg">Attention Required</h2>
+<div class="bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+<div class="bg-error/5 px-lg py-md border-b border-error/10 flex items-center gap-xs text-error font-bold text-label-md">
+<span class="material-symbols-outlined text-[18px]">report</span> High Priority Ticket
+                                </div>
+<div class="p-lg">
+<h4 class="font-bold text-on-surface mb-sm">#TK-204: Server Downtime</h4>
+<p class="text-on-surface-variant text-body-sm mb-lg">Main production database unresponsive. affecting 200+ users.</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-[10px] font-bold">AM</div>
+<span class="text-label-sm text-on-surface-variant">Alex Murphy</span>
+</div>
+<button class="bg-primary text-white px-md py-2 rounded-lg text-label-sm font-bold hover:bg-primary-container transition-colors">Fix Now</button>
+</div>
+</div>
+</div>
+</div>
+<div>
+<h3 class="font-bold text-on-surface mb-md">Upcoming Meetings</h3>
+<div class="bg-white border border-outline-variant rounded-2xl p-lg shadow-sm space-y-md">
+<div class="flex gap-md">
+<div class="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-xl flex flex-col items-center justify-center shrink-0">
+<span class="text-[10px] uppercase font-bold leading-none">Nov</span>
+<span class="text-[18px] font-extrabold leading-none">24</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-body-sm">Stakeholder Review</span>
+<span class="text-label-sm text-on-surface-variant">10:00 AM - 11:30 AM</span>
+</div>
+</div>
+<div class="flex gap-md">
+<div class="w-12 h-12 bg-surface-container text-on-surface-variant rounded-xl flex flex-col items-center justify-center shrink-0">
+<span class="text-[10px] uppercase font-bold leading-none">Nov</span>
+<span class="text-[18px] font-extrabold leading-none">25</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-body-sm">Tech Alignment</span>
+<span class="text-label-sm text-on-surface-variant">02:00 PM - 03:00 PM</span>
+</div>
+</div>
+<button class="w-full mt-sm text-primary font-bold text-label-md py-3 border border-primary/20 rounded-xl hover:bg-primary/5 transition-colors">Open Calendar</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Call to Action Banner -->
+<section class="mt-xxl">
+<div class="bg-primary text-white rounded-3xl p-xl flex flex-col md:flex-row items-center justify-between gap-lg relative overflow-hidden shadow-xl">
+<div class="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -mr-24 -mt-24"></div>
+<div class="relative z-10 space-y-sm text-center md:text-left">
+<h3 class="font-headline-md text-headline-md">Ready to scale up?</h3>
+<p class="text-primary-fixed-dim text-body-lg opacity-80">Invite your team and start collaborating today.</p>
+</div>
+<button class="relative z-10 bg-secondary-container text-on-secondary-container px-xl py-4 rounded-xl font-bold text-label-md hover:scale-105 transition-transform shadow-lg">
+                        Create New Request
+                    </button>
+</div>
+</section>
+</main>
+</div>
+<!-- BottomNavBar (Mobile/Tablet Only) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-white border-t border-outline-variant shadow-lg pb-safe">
+<div class="flex justify-around items-center h-20 px-2">
+<a class="flex flex-col items-center justify-center gap-1 text-primary" href="#">
+<div class="bg-secondary-container px-5 py-1.5 rounded-full">
+<span class="material-symbols-outlined">dashboard</span>
+</div>
+<span class="font-label-sm text-[11px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-sm text-[11px] font-bold">Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-label-sm text-[11px] font-bold">Tickets</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-label-sm text-[11px] font-bold">Calendar</span>
+</a>
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-[11px] font-bold">Profile</span>
+</a>
+</div>
+</nav>
+<!-- FAB -->
+<button class="fixed bottom-24 right-container-margin lg:bottom-12 lg:right-12 bg-primary text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-40 group">
+<span class="material-symbols-outlined text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
+</button>
+</body></html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#4059aa",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#574500",
+                    "inverse-on-surface": "#f1f0f7",
+                    "surface-variant": "#e3e1e9",
+                    "tertiary-container": "#6e2c00",
+                    "surface-dim": "#dad9e1",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#e3e1e9",
+                    "on-surface": "#1a1b21",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#eec200",
+                    "on-surface-variant": "#444651",
+                    "surface": "#faf8ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#faf8ff",
+                    "secondary-fixed": "#ffe083",
+                    "on-tertiary-container": "#f39461",
+                    "on-secondary-container": "#6f5900",
+                    "on-secondary-fixed": "#231b00",
+                    "inverse-primary": "#b6c4ff",
+                    "background": "#faf8ff",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-primary-fixed-variant": "#264191",
+                    "on-error": "#ffffff",
+                    "primary-container": "#1e3a8a",
+                    "on-background": "#1a1b21",
+                    "outline": "#757682",
+                    "inverse-surface": "#2f3036",
+                    "tertiary": "#4b1c00",
+                    "surface-container-low": "#f4f3fa",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#00164e",
+                    "surface-container-high": "#e9e7ef",
+                    "primary-fixed": "#dce1ff",
+                    "on-tertiary-fixed-variant": "#773205",
+                    "on-primary-container": "#90a8ff",
+                    "secondary": "#735c00",
+                    "outline-variant": "#c5c5d3",
+                    "error": "#ba1a1a",
+                    "primary": "#00236f",
+                    "tertiary-fixed": "#ffdbcb",
+                    "on-tertiary-fixed": "#341100",
+                    "tertiary-fixed-dim": "#ffb691",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#fed01b",
+                    "surface-container": "#eeedf4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "container-margin": "24px",
+                    "xxl": "48px",
+                    "sm": "8px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "md": "16px",
+                    "xs": "4px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Manrope"],
+                    "headline-xl": ["Manrope"],
+                    "body-sm": ["Manrope"],
+                    "label-md": ["Manrope"],
+                    "headline-lg": ["Manrope"],
+                    "body-lg": ["Manrope"],
+                    "body-base": ["Manrope"],
+                    "headline-lg-mobile": ["Manrope"],
+                    "headline-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .profile-backdrop {
+            background: linear-gradient(135deg, #00236f 0%, #1e3a8a 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center w-full px-container-margin h-16 sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-extrabold text-primary">ProjectHub Pro</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors duration-150">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsLYp_UUALD6zlxzXWWZ8D0OPQSriDq7fUi7S1biW2Nu_PUTXGTbSuEfujXeOEs4_9tgQkEdlqhRufkStk1N7DkE8wPMUQj9O9ehDGoDIjA9xlNLvA8L-rXdO6bjAsCV5WE9KyDN6OwMuaaQmuNhgMKec_8N8o-UTquEqRI6dF7AJS7colHjpuq3AuLTt0UZ6bZhsYVjkCVdOkaX6MdWzmog2juIlLLXvj6t8RKOwIm01yuSwSV-Chbb2NNiwSPb4co92MBRuzgw"/>
+</div>
+</div>
+</header>
+<main class="max-w-4xl mx-auto px-container-margin py-xl space-y-lg">
+<!-- Hero Profile Section: Simplified -->
+<section class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="h-28 profile-backdrop"></div>
+<div class="px-xl pb-lg -mt-10 flex flex-col items-center sm:flex-row sm:items-end gap-md">
+<div class="relative">
+<div class="w-28 h-28 rounded-2xl border-4 border-surface overflow-hidden shadow-md bg-surface">
+<img alt="Admin Profile Photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjGWddUsCf6rIg0a5bj8fDMg1lFLl87sNEn68kDxI9VwTm1A7KETklcIoAQWkwNpwk3o_BCbV_VxianNNYtp7Sx12_cCLfeHtl_cYTdl1YLIRzwECl2p8AHAWL_QZW0U7G0GTl_KpsiAXMxyHIgayz5XaxYSbXBhNQ1dZ0nZSkt9y-K3v7MOKMOcqlnK7nR2K1_Q5BRejiY5gxBbvYtkRgJSQiWEVfyS8jLTFbwyMrVo5dDWGJuVmERpsaqza3li5vUFMJf7hplw"/>
+</div>
+</div>
+<div class="flex-1 text-center sm:text-left pb-2">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Admin ProjectHub</h1>
+<p class="font-body-base text-body-base text-on-surface-variant">admin@projecthubpro.com</p>
+</div>
+<div class="pb-2">
+<span class="bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full font-label-md text-label-md">Status: Active</span>
+</div>
+</div>
+</section>
+<!-- Profile Management Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Ubah Foto Profil: Simplified Bento -->
+<section class="md:col-span-4 bg-surface border border-outline-variant rounded-xl p-lg shadow-sm">
+<h3 class="font-label-md text-label-md text-primary uppercase tracking-wider mb-sm">Foto Profil</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Perbarui foto Anda untuk identitas visual.</p>
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center gap-sm bg-surface-container-low group hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-4xl text-outline group-hover:text-primary transition-colors">add_a_photo</span>
+<button class="bg-secondary text-on-secondary px-4 py-2 rounded-lg font-label-md text-label-md shadow-sm active:scale-95 transition-transform">
+                        Pilih File
+                    </button>
+<p class="font-label-sm text-[10px] text-on-surface-variant uppercase">Maks 2MB</p>
+</div>
+</section>
+<!-- Informasi Akun: Main Details -->
+<section class="md:col-span-8 bg-surface border border-outline-variant rounded-xl p-lg shadow-sm">
+<h3 class="font-label-md text-label-md text-primary uppercase tracking-wider mb-lg">Informasi Akun</h3>
+<form class="space-y-md">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
+<div class="space-y-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Nama Lengkap</label>
+<input class="w-full h-11 px-md border border-outline-variant rounded-lg font-body-base focus:border-2 focus:border-primary focus:ring-0 outline-none transition-all" type="text" value="Admin ProjectHub"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Alamat Email</label>
+<input class="w-full h-11 px-md border border-outline-variant rounded-lg font-body-base focus:border-2 focus:border-primary focus:ring-0 outline-none transition-all" type="email" value="admin@projecthubpro.com"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Role</label>
+<div class="w-full h-11 px-md border border-outline-variant rounded-lg font-body-base bg-surface-container-lowest flex items-center text-on-surface-variant opacity-75">
+                                Administrator
+                            </div>
+</div>
+<div class="space-y-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Departemen</label>
+<div class="w-full h-11 px-md border border-outline-variant rounded-lg font-body-base bg-surface-container-lowest flex items-center text-on-surface">
+                                IT Operations
+                            </div>
+</div>
+</div>
+<div class="flex justify-end gap-md pt-md border-t border-outline-variant">
+<button class="px-5 py-2 text-primary font-label-md text-label-md rounded-lg hover:bg-surface-container-high transition-colors" type="button">Batal</button>
+<button class="px-6 py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all" type="submit">Simpan</button>
+</div>
+</form>
+</section>
+<!-- Settings Links: Quick Access -->
+<section class="md:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-md">
+<a class="group bg-surface border border-outline-variant rounded-xl p-md flex items-center justify-between hover:border-primary transition-all shadow-sm" href="#">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">security</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Keamanan</h4>
+<p class="font-body-sm text-xs text-on-surface-variant">Kata sandi &amp; 2FA</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+</a>
+<a class="group bg-surface border border-outline-variant rounded-xl p-md flex items-center justify-between hover:border-primary transition-all shadow-sm" href="#">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">notifications_active</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Notifikasi</h4>
+<p class="font-body-sm text-xs text-on-surface-variant">Preferensi pemberitahuan</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+</a>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) - Consistent & Updated -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-2 pb-safe bg-surface border-t border-outline-variant shadow-[0_-4px_10px_rgba(0,0,0,0.05)] md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-[10px] mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-sm text-[10px] mt-1">Projects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">confirmation_number</span>
+<span class="font-label-sm text-[10px] mt-1">Tickets</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-label-sm text-[10px] mt-1">Calendar</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary px-3 py-1">
+<div class="bg-secondary-container text-on-secondary-container rounded-lg p-1 px-3 flex flex-col items-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-sm text-[10px]">Profile</span>
+</div>
+</button>
+</nav>
+</body></html>
