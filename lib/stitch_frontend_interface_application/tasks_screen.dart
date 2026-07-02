@@ -81,6 +81,7 @@ class _TasksScreenState extends State<TasksScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'tasks_fab',
         onPressed: () {},
         backgroundColor: AppColors.primary600,
         child: const Icon(Icons.add, color: Colors.white),

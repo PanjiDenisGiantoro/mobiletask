@@ -108,6 +108,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'messages_fab',
         onPressed: () {},
         backgroundColor: AppColors.primary600,
         child: const Icon(Icons.chat_bubble_outline, color: Colors.white),

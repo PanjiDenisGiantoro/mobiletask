@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _buildBottomNav(),
       floatingActionButton: _selectedNav == 0
           ? FloatingActionButton(
+              heroTag: 'home_fab',
               onPressed: () {},
               backgroundColor: AppColors.primary600,
               child: const Icon(Icons.add, color: AppColors.white),

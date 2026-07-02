@@ -136,6 +136,7 @@ class _ProjectsScreenState extends State<ProjectsScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'projects_fab',
         onPressed: () {},
         backgroundColor: AppColors.primary600,
         icon: const Icon(Icons.add, color: Colors.white),
