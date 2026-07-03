@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
 import 'stitch_frontend_interface_application/app_theme.dart';
-import 'stitch_frontend_interface_application/home_screen.dart';
+import 'stitch_frontend_interface_application/welcome_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,10 +13,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ProjectHub',
+      title: 'Flovig',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const SplashScreen(nextScreen: HomeScreen()),
+      home: const SplashScreen(nextScreen: WelcomeScreen()),
     );
   }
 }

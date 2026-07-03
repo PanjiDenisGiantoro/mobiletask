@@ -90,7 +90,7 @@ class ProjectCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary600,
+                  color: AppColors.heroStart,
                 ),
               ),
             ],
@@ -101,9 +101,9 @@ class ProjectCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: AppColors.primary50,
+              backgroundColor: AppColors.grey100,
               valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary600,
+                AppColors.heroStart,
               ),
             ),
           ),

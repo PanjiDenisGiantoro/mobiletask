@@ -56,7 +56,7 @@ class TaskTile extends StatelessWidget {
           Checkbox(
             value: isDone,
             onChanged: onChanged,
-            activeColor: AppColors.primary600,
+            activeColor: AppColors.heroStart,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
             ),

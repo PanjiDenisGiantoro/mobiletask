@@ -90,9 +90,18 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey100,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.primary700,
+        backgroundColor: AppColors.heroStart,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.heroStart, AppColors.heroMid],
+            ),
+          ),
+        ),
         title: const Text('Messages'),
         actions: [
           IconButton(
@@ -110,7 +119,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
       floatingActionButton: FloatingActionButton(
         heroTag: 'messages_fab',
         onPressed: () {},
-        backgroundColor: AppColors.primary600,
+        backgroundColor: AppColors.heroStart,
         child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
       ),
     );
@@ -199,7 +208,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           color: hasUnread
-                              ? AppColors.primary600
+                              ? AppColors.heroStart
                               : AppColors.grey400,
                           fontWeight: hasUnread
                               ? FontWeight.w600
@@ -233,7 +242,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.primary600,
+                            color: AppColors.heroStart,
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           child: Text(

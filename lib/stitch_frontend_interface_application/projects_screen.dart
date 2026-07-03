@@ -98,15 +98,24 @@ class _ProjectsScreenState extends State<ProjectsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey100,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.primary700,
+        backgroundColor: AppColors.heroStart,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.heroStart, AppColors.heroMid],
+            ),
+          ),
+        ),
         title: const Text('Projects'),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.accent400,
+          indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'All'),
             Tab(text: 'Active'),
@@ -138,7 +147,7 @@ class _ProjectsScreenState extends State<ProjectsScreen>
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'projects_fab',
         onPressed: () {},
-        backgroundColor: AppColors.primary600,
+        backgroundColor: AppColors.heroStart,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('New Project',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),

@@ -17,11 +17,23 @@ class AppColors {
   static const error      = Color(0xFFE53935);
   static const info       = Color(0xFF1E88E5);
 
+  static const successBg  = Color(0xFFE8F5E9);
+  static const warningBg  = Color(0xFFFFF3E0);
+  static const errorBg    = Color(0xFFFFEBEE);
+
   static const grey900    = Color(0xFF212121);
   static const grey700    = Color(0xFF616161);
+  static const grey500    = Color(0xFF9E9E9E);
   static const grey400    = Color(0xFFBDBDBD);
   static const grey100    = Color(0xFFF5F5F5);
   static const white      = Color(0xFFFFFFFF);
+
+  static const heroStart  = Color(0xFF6D5DF6);
+  static const heroMid    = Color(0xFF8B6DF7);
+  static const heroEnd    = Color(0xFFB18CFF);
+
+  /// Latar layar utama (lavender terang) dipakai di semua tab.
+  static const bg         = Color(0xFFF7F5FF);
 }
 
 class AppSpacing {
@@ -37,7 +49,18 @@ class AppRadius {
   static const double small  = 8;
   static const double medium = 12;
   static const double large  = 16;
+  static const double xl     = 24;
   static const double full   = 100;
+}
+
+class AppShadows {
+  static const List<BoxShadow> card = [
+    BoxShadow(
+      color: Color(0x14212121),
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+  ];
 }
 
 ThemeData buildAppTheme() {

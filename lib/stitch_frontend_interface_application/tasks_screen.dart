@@ -50,15 +50,24 @@ class _TasksScreenState extends State<TasksScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey100,
+      backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.primary700,
+        backgroundColor: AppColors.heroStart,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.heroStart, AppColors.heroMid],
+            ),
+          ),
+        ),
         title: const Text('Tasks'),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.accent400,
+          indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'To Do'),
             Tab(text: 'Done'),
@@ -83,7 +92,7 @@ class _TasksScreenState extends State<TasksScreen>
       floatingActionButton: FloatingActionButton(
         heroTag: 'tasks_fab',
         onPressed: () {},
-        backgroundColor: AppColors.primary600,
+        backgroundColor: AppColors.heroStart,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -113,7 +122,7 @@ class _TasksScreenState extends State<TasksScreen>
                         style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary600)),
+                            color: AppColors.heroStart)),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -122,8 +131,8 @@ class _TasksScreenState extends State<TasksScreen>
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 8,
-                    backgroundColor: AppColors.primary50,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary600),
+                    backgroundColor: AppColors.grey100,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.heroStart),
                   ),
                 ),
               ],
@@ -154,7 +163,7 @@ class _TasksScreenState extends State<TasksScreen>
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md, vertical: AppSpacing.xs),
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary600 : AppColors.grey100,
+                color: selected ? AppColors.heroStart : AppColors.grey100,
                 borderRadius: BorderRadius.circular(AppRadius.full),
               ),
               child: Text(

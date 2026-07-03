@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
-import 'widgets/stat_card.dart';
-import 'widgets/project_card.dart';
-import 'widgets/task_tile.dart';
 import 'projects_screen.dart';
 import 'tasks_screen.dart';
 import 'messages_screen.dart';
@@ -29,36 +26,89 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey100,
-      body: IndexedStack(
-        index: _selectedNav,
-        children: _screens,
+      extendBody: true,
+      backgroundColor: AppColors.bg,
+      body: IndexedStack(index: _selectedNav, children: _screens),
+      bottomNavigationBar: _FloatingNavBar(
+        selectedIndex: _selectedNav,
+        onTap: (i) => setState(() => _selectedNav = i),
       ),
-      bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _selectedNav == 0
-          ? FloatingActionButton(
-              heroTag: 'home_fab',
-              onPressed: () {},
-              backgroundColor: AppColors.primary600,
-              child: const Icon(Icons.add, color: AppColors.white),
-            )
-          : null,
     );
   }
+}
 
-  Widget _buildBottomNav() {
-    const items = [
-      BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-      BottomNavigationBarItem(icon: Icon(Icons.folder_outlined), activeIcon: Icon(Icons.folder), label: 'Projects'),
-      BottomNavigationBarItem(icon: Icon(Icons.task_outlined), activeIcon: Icon(Icons.task), label: 'Tasks'),
-      BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), activeIcon: Icon(Icons.chat_bubble), label: 'Messages'),
-      BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-    ];
+/// Bottom nav mengambang versi terang, sesuai referensi baru (putih, bukan
+/// gelap seperti iterasi sebelumnya).
+class _FloatingNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
 
-    return BottomNavigationBar(
-      currentIndex: _selectedNav,
-      onTap: (i) => setState(() => _selectedNav = i),
-      items: items,
+  const _FloatingNavBar({required this.selectedIndex, required this.onTap});
+
+  static const _icons = [
+    Icons.home_rounded,
+    Icons.folder_rounded,
+    null,
+    Icons.checklist_rounded,
+    Icons.grid_view_rounded,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: Container(
+          height: 58,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.grey900.withValues(alpha: 0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(5, (i) {
+              if (i == 2) {
+                return GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.heroStart,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.heroStart.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 19),
+                  ),
+                );
+              }
+              final navIndex = i > 2 ? i - 1 : i;
+              final selected = selectedIndex == navIndex;
+              return IconButton(
+                onPressed: () => onTap(navIndex),
+                icon: Icon(
+                  _icons[i],
+                  color: selected ? AppColors.heroStart : AppColors.grey400,
+                  size: 21,
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -73,125 +123,233 @@ class _DashboardBody extends StatefulWidget {
 }
 
 class _DashboardBodyState extends State<_DashboardBody> {
-  final List<bool> _taskDone = [false, true, false, false];
+  final List<Map<String, dynamic>> _quickActions = const [
+    {'icon': Icons.folder_outlined, 'label': 'Proyek', 'color': Color(0xFF1565C0), 'bg': Color(0xFFE3F2FD)},
+    {'icon': Icons.checklist_outlined, 'label': 'Tugas', 'color': Color(0xFFE65100), 'bg': Color(0xFFFFF3E0)},
+    {'icon': Icons.groups_outlined, 'label': 'Tim', 'color': Color(0xFFD84315), 'bg': Color(0xFFFBE9E7)},
+    {'icon': Icons.bar_chart_rounded, 'label': 'Laporan', 'color': AppColors.success, 'bg': AppColors.successBg},
+  ];
+
+  final List<Map<String, dynamic>> _priorities = const [
+    {
+      'title': 'Backend API v2',
+      'icon': Icons.code_outlined,
+      'iconColor': AppColors.success,
+      'iconBg': AppColors.successBg,
+      'meta': '18 tugas · 1 minggu',
+      'progress': '40%',
+    },
+    {
+      'title': 'Marketing Q2',
+      'icon': Icons.campaign_outlined,
+      'iconColor': AppColors.warning,
+      'iconBg': AppColors.warningBg,
+      'meta': '10 tugas · 3 hari',
+      'progress': '80%',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _activity = const [
+    {'title': 'Wireframe onboarding', 'date': '12 Mei', 'done': true},
+    {'title': 'Fix bug login Android', 'date': '10 Mei', 'done': false},
+    {'title': 'Setup CI/CD pipeline', 'date': '8 Mei', 'done': true},
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        _buildAppBar(),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildGreeting(),
-                const SizedBox(height: AppSpacing.lg),
-                _buildStats(),
-                const SizedBox(height: AppSpacing.lg),
-                _buildSectionHeader('Active Projects'),
-                const SizedBox(height: AppSpacing.sm),
-                _buildProjectCards(),
-                const SizedBox(height: AppSpacing.lg),
-                _buildSectionHeader("Today's Tasks"),
-                const SizedBox(height: AppSpacing.sm),
-                _buildTaskList(),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return SafeArea(
+      bottom: false,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
+        children: [
+          _buildHeroCard(context),
+          const SizedBox(height: AppSpacing.lg),
+          const _SectionTitle('Akses cepat'),
+          const SizedBox(height: AppSpacing.sm),
+          _buildQuickActions(),
+          const SizedBox(height: AppSpacing.lg),
+          _buildSectionHeader('Prioritas minggu ini'),
+          const SizedBox(height: AppSpacing.sm),
+          _buildPriorityRow(),
+          const SizedBox(height: AppSpacing.lg),
+          const _SectionTitle('Aktivitas terbaru'),
+          const SizedBox(height: AppSpacing.sm),
+          ..._activity.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _ActivityTile(activity: a),
+              )),
+        ],
+      ),
     );
   }
 
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: 0,
-      backgroundColor: AppColors.primary700,
-      title: Row(
+  Widget _buildHeroCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.heroStart, AppColors.heroMid, AppColors.heroEnd],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.hub_rounded, color: Colors.white, size: 20),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Tim Alpha', style: TextStyle(color: Colors.white, fontSize: 11)),
+                    Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 14),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              const Icon(Icons.notifications_outlined, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              const CircleAvatar(
+                radius: 13,
+                backgroundColor: Colors.white,
+                child: Text('P',
+                    style: TextStyle(color: AppColors.heroStart, fontWeight: FontWeight.w700, fontSize: 11)),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          const Text(
-            'ProjectHub',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+          const SizedBox(height: 14),
+          const Text('Halo, Panji',
+              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text('Ini progres proyek kamu hari ini',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+          const SizedBox(height: AppSpacing.sm + 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppRadius.medium),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.folder_outlined, color: Colors.white, size: 15),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('12 proyek', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text('sedang berjalan', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: const Text('+ Proyek',
+                      style: TextStyle(color: AppColors.heroStart, fontSize: 11, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm + 4),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadius.medium),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _tag('Aktif', AppColors.success, AppColors.successBg),
+                          const SizedBox(width: 6),
+                          _tag('Prioritas tinggi', AppColors.error, AppColors.errorBg),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Text('Mobile App Redesign',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.grey900)),
+                      const SizedBox(height: 2),
+                      const Text('Sprint 3 · Tim mobile',
+                          style: TextStyle(fontSize: 11, color: AppColors.grey500)),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Row(
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.grey500),
+                          SizedBox(width: 4),
+                          Text('Deadline 20 Mei', style: TextStyle(fontSize: 11, color: AppColors.grey500)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const _ProgressRing(progress: 0.65),
+              ],
             ),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-          onPressed: () {},
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: AppSpacing.sm),
-          child: CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.accent400,
-            child: const Text(
-              'P',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
+    );
+  }
+
+  Widget _tag(String label, Color color, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.full)),
+      child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color)),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _quickActions.map((a) {
+        return GestureDetector(
+          onTap: () {},
+          child: Column(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: a['bg'] as Color,
+                  borderRadius: BorderRadius.circular(AppRadius.large),
+                ),
+                child: Icon(a['icon'] as IconData, color: a['color'] as Color, size: 24),
               ),
-            ),
+              const SizedBox(height: 6),
+              Text(a['label'] as String,
+                  style: const TextStyle(fontSize: 11, color: AppColors.grey700, fontWeight: FontWeight.w500)),
+            ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGreeting() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Good morning, Panji 👋',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: AppColors.grey900,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'You have 4 tasks to complete today',
-          style: TextStyle(fontSize: 14, color: AppColors.grey700),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStats() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 1.4,
-      children: const [
-        StatCard(value: '12', label: 'Active Projects', icon: Icons.folder_outlined, color: AppColors.primary600),
-        StatCard(value: '48', label: 'Total Tasks', icon: Icons.task_alt_outlined, color: AppColors.accent400),
-        StatCard(value: '7', label: 'Completed', icon: Icons.check_circle_outline, color: AppColors.success),
-        StatCard(value: '3', label: 'Overdue', icon: Icons.warning_amber_outlined, color: AppColors.error),
-      ],
+        );
+      }).toList(),
     );
   }
 
@@ -199,64 +357,179 @@ class _DashboardBodyState extends State<_DashboardBody> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title,
-            style: const TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.grey900)),
+        _SectionTitle(title),
         GestureDetector(
           onTap: () {},
-          child: const Text('See all',
-              style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary600)),
+          child: const Text('Lihat semua',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.heroStart)),
         ),
       ],
     );
   }
 
-  Widget _buildProjectCards() {
-    final projects = [
-      {'title': 'Mobile App Redesign', 'category': 'Design', 'progress': 0.65, 'totalTasks': 24, 'doneTasks': 16, 'memberColors': [AppColors.primary600, AppColors.accent400, AppColors.warning], 'dueDate': 'May 20', 'categoryColor': AppColors.info},
-      {'title': 'Backend API v2', 'category': 'Development', 'progress': 0.40, 'totalTasks': 18, 'doneTasks': 7, 'memberColors': [AppColors.success, AppColors.primary400], 'dueDate': 'Jun 01', 'categoryColor': AppColors.success},
-      {'title': 'Marketing Campaign', 'category': 'Marketing', 'progress': 0.80, 'totalTasks': 10, 'doneTasks': 8, 'memberColors': [AppColors.warning, AppColors.error, AppColors.accent400], 'dueDate': 'May 15', 'categoryColor': AppColors.warning},
-    ];
-    return Column(
-      children: projects.map((p) => Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-        child: ProjectCard(
-          title: p['title'] as String,
-          category: p['category'] as String,
-          progress: p['progress'] as double,
-          totalTasks: p['totalTasks'] as int,
-          doneTasks: p['doneTasks'] as int,
-          memberColors: p['memberColors'] as List<Color>,
-          dueDate: p['dueDate'] as String,
-          categoryColor: p['categoryColor'] as Color,
-        ),
-      )).toList(),
+  Widget _buildPriorityRow() {
+    return Row(
+      children: _priorities.map((p) {
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: p == _priorities.first ? AppSpacing.sm : 0),
+            padding: const EdgeInsets.all(AppSpacing.sm + 4),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadius.large),
+              boxShadow: AppShadows.card,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: p['iconBg'] as Color,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(p['icon'] as IconData, color: p['iconColor'] as Color, size: 15),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(p['title'] as String,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.grey900)),
+                const SizedBox(height: 2),
+                Text(p['meta'] as String, style: const TextStyle(fontSize: 10, color: AppColors.grey500)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(p['progress'] as String,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.heroStart)),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14));
+  }
+}
+
+/// Ring progress sederhana pakai CustomPaint — tidak butuh package tambahan.
+class _ProgressRing extends StatelessWidget {
+  final double progress;
+  const _ProgressRing({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            size: const Size(64, 64),
+            painter: _RingPainter(progress: progress.clamp(0.0, 1.0)),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${(progress * 100).round()}%',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.grey900)),
+              const Text('selesai', style: TextStyle(fontSize: 8, color: AppColors.grey500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  final double progress;
+  _RingPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 7) / 2;
+
+    final track = Paint()
+      ..color = AppColors.grey100
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, track);
+
+    final arc = Paint()
+      ..color = AppColors.heroStart
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708,
+      6.2832 * progress,
+      false,
+      arc,
     );
   }
 
-  Widget _buildTaskList() {
-    final tasks = [
-      {'title': 'Finalize wireframes for onboarding', 'project': 'Mobile App Redesign', 'priority': TaskPriority.high, 'due': 'Today'},
-      {'title': 'Review API documentation', 'project': 'Backend API v2', 'priority': TaskPriority.medium, 'due': 'Today'},
-      {'title': 'Send weekly report to stakeholders', 'project': 'Marketing Campaign', 'priority': TaskPriority.low, 'due': 'Today'},
-      {'title': 'Fix login screen crash on Android', 'project': 'Mobile App Redesign', 'priority': TaskPriority.high, 'due': 'Today'},
-    ];
-    return Column(
-      children: List.generate(tasks.length, (i) {
-        final task = tasks[i];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: TaskTile(
-            title: task['title'] as String,
-            project: task['project'] as String,
-            priority: task['priority'] as TaskPriority,
-            dueDate: task['due'] as String,
-            isDone: _taskDone[i],
-            onChanged: (val) => setState(() => _taskDone[i] = val ?? false),
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) => oldDelegate.progress != progress;
+}
+
+class _ActivityTile extends StatelessWidget {
+  final Map<String, dynamic> activity;
+  const _ActivityTile({required this.activity});
+
+  @override
+  Widget build(BuildContext context) {
+    final done = activity['done'] == true;
+    final color = done ? AppColors.success : AppColors.error;
+    final bg = done ? AppColors.successBg : AppColors.errorBg;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        boxShadow: AppShadows.card,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            child: Icon(done ? Icons.check_rounded : Icons.priority_high_rounded, color: color, size: 18),
           ),
-        );
-      }),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(activity['title'] as String,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.grey900)),
+                Text(activity['date'] as String, style: const TextStyle(fontSize: 10, color: AppColors.grey500)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.full)),
+            child: Text(done ? 'Selesai' : 'Terlambat',
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color)),
+          ),
+        ],
+      ),
     );
   }
 }

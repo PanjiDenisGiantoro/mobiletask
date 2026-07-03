@@ -125,13 +125,10 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Container(
                             width: 120,
                             height: 120,
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 2,
-                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
@@ -140,15 +137,9 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                               ],
                             ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Icon(
-                                  Icons.hub_rounded,
-                                  size: 72,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                              ],
+                            child: Image.asset(
+                              'assets/images/flovig_logo.webp',
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -159,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: FadeTransition(
                           opacity: _textOpacity,
                           child: const Text(
-                            'ProjectHub',
+                            'Flovig',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 40,

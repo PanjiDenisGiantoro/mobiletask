@@ -7,7 +7,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grey100,
+      backgroundColor: AppColors.bg,
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(),
@@ -38,14 +38,14 @@ class ProfileScreen extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 160,
       pinned: true,
-      backgroundColor: AppColors.primary700,
+      backgroundColor: AppColors.heroStart,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primary800, AppColors.primary600],
+              colors: [AppColors.heroStart, AppColors.heroMid, AppColors.heroEnd],
             ),
           ),
         ),
@@ -72,12 +72,12 @@ class ProfileScreen extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
-                colors: [AppColors.primary600, AppColors.accent400],
+                colors: [AppColors.heroStart, AppColors.heroEnd],
               ),
               border: Border.all(color: AppColors.white, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary600.withOpacity(0.3),
+                  color: AppColors.heroStart.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -166,7 +166,7 @@ class ProfileScreen extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary600,
+                color: AppColors.heroStart,
               ),
             ),
             const SizedBox(height: 2),
@@ -283,19 +283,19 @@ class ProfileScreen extends StatelessWidget {
         _MenuItem(
             icon: Icons.person_outline,
             label: 'Edit Profile',
-            color: AppColors.primary600),
+            color: AppColors.heroStart),
         _MenuItem(
             icon: Icons.lock_outline,
             label: 'Change Password',
-            color: AppColors.primary600),
+            color: AppColors.heroStart),
         _MenuItem(
             icon: Icons.notifications_outlined,
             label: 'Notifications',
-            color: AppColors.primary600,
+            color: AppColors.heroStart,
             trailing: Switch(
               value: true,
               onChanged: (_) {},
-              activeColor: AppColors.primary600,
+              activeColor: AppColors.heroStart,
             )),
       ];
 
@@ -307,7 +307,7 @@ class ProfileScreen extends StatelessWidget {
             trailing: Switch(
               value: false,
               onChanged: (_) {},
-              activeColor: AppColors.primary600,
+              activeColor: AppColors.heroStart,
             )),
         _MenuItem(
             icon: Icons.language_outlined,
@@ -328,7 +328,7 @@ class ProfileScreen extends StatelessWidget {
             color: AppColors.info),
         _MenuItem(
             icon: Icons.info_outline,
-            label: 'About ProjectHub',
+            label: 'About Flovig',
             color: AppColors.info,
             trailing: const Text('v1.0.0',
                 style: TextStyle(fontSize: 13, color: AppColors.grey400))),
