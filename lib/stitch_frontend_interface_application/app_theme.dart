@@ -34,6 +34,10 @@ class AppColors {
 
   /// Latar layar utama (lavender terang) dipakai di semua tab.
   static const bg         = Color(0xFFF7F5FF);
+
+  /// Latar gelap untuk layar onboarding.
+  static const onboardingBg    = Color(0xFF12132B);
+  static const onboardingTrack = Color(0xFF2A2C4D);
 }
 
 class AppSpacing {

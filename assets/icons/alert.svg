@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Alert Icon</title>
+  <rect x="24" y="24" width="208" height="208" rx="48" fill="#FFEBEE" />
+  <circle cx="128" cy="128" r="56" fill="#E53935" />
+  <rect x="120" y="96" width="16" height="48" rx="8" fill="#FFFFFF" />
+  <circle cx="128" cy="160" r="9" fill="#FFFFFF" />
+</svg>

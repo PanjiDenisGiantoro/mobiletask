@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'app_theme.dart';
 import 'home_screen.dart';
 
 /// Form login mengikuti referensi desain login1.png (header lengkung +
 /// ilustrasi, kartu putih dengan field pill, tombol sign-in sosial),
-/// warna disesuaikan ke palet biru Flovig.
+/// warna disesuaikan ke palet biru Flovig. Ilustrasi header memakai
+/// `assets/lottie/login.json`.
 class LoginFormScreen extends StatefulWidget {
   const LoginFormScreen({super.key});
 
@@ -171,9 +173,9 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.xl),
+                padding: const EdgeInsets.only(top: AppSpacing.md),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
@@ -191,7 +193,7 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                         ],
                       ),
                     ),
-                    _buildIllustrationCard(),
+                    _buildIllustration(),
                   ],
                 ),
               ),
@@ -202,26 +204,15 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
     );
   }
 
-  Widget _buildIllustrationCard() {
-    return Transform.rotate(
-      angle: -0.08,
-      child: Container(
-        width: 76,
-        height: 92,
-        margin: const EdgeInsets.only(top: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.large),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Image.asset('assets/images/flovig_logo.webp', fit: BoxFit.contain),
+  Widget _buildIllustration() {
+    return SizedBox(
+      width: 108,
+      height: 108,
+      child: Lottie.asset(
+        'assets/lottie/login.json',
+        fit: BoxFit.contain,
+        repeat: true,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
     );
   }

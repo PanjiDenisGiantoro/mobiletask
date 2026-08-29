@@ -89,11 +89,14 @@ class _TasksScreenState extends State<TasksScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'tasks_fab',
-        onPressed: () {},
-        backgroundColor: AppColors.heroStart,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 70),
+        child: FloatingActionButton(
+          heroTag: 'tasks_fab',
+          onPressed: () {},
+          backgroundColor: AppColors.heroStart,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
@@ -152,7 +155,7 @@ class _TasksScreenState extends State<TasksScreen>
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         scrollDirection: Axis.horizontal,
         itemCount: _filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (_, i) {
           final f = _filters[i];
           final selected = _selectedFilter == f;
@@ -205,9 +208,14 @@ class _TasksScreenState extends State<TasksScreen>
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        100,
+      ),
       itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (_, i) {
         final task = list[i];
         final globalIndex = _tasks.indexOf(task);

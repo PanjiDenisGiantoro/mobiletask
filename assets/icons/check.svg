@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Check Icon</title>
+  <rect x="24" y="24" width="208" height="208" rx="48" fill="#E8F5E9" />
+  <circle cx="128" cy="128" r="56" fill="#43A047" />
+  <path d="M 104 128 L 120 144 L 154 108" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

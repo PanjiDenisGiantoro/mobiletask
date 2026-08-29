@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Project Icon</title>
+
+  <!-- Soft Drop Shadow Beneath Folder -->
+  <ellipse cx="128" cy="214" rx="88" ry="10" fill="#0F172A" opacity="0.08" />
+
+  <!-- Blue Folder Tab -->
+  <path d="M 46 48 H 92 C 99.5 48 106.3 52.2 109.8 58.8 L 118 74 H 32 V 62 C 32 54.3 38.3 48 46 48 Z" fill="#2563EB" />
+
+  <!-- Light Blue Folder Body -->
+  <rect x="32" y="72" width="192" height="140" rx="20" fill="#EEF3FD" />
+
+  <!-- Vertical Grid Lines Behind Gantt Bars -->
+  <g stroke="#DCE6F9" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 4">
+    <line x1="72" y1="92" x2="72" y2="188" />
+    <line x1="104" y1="92" x2="104" y2="188" />
+    <line x1="136" y1="92" x2="136" y2="188" />
+    <line x1="168" y1="92" x2="168" y2="188" />
+    <line x1="200" y1="92" x2="200" y2="188" />
+  </g>
+
+  <!-- Gantt Chart Bars -->
+  <rect x="72" y="100" width="110" height="18" rx="9" fill="#3B82F6" />
+  <rect x="120" y="130" width="80" height="18" rx="9" fill="#14B8A6" />
+  <rect x="100" y="160" width="60" height="18" rx="9" fill="#7C3AED" />
+</svg>

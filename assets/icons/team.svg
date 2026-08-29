@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Team Icon</title>
+  <defs>
+    <filter id="badge-shadow" x="-10%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.12" />
+    </filter>
+  </defs>
+
+  <!-- Soft light blue circular badge background -->
+  <circle cx="128" cy="128" r="104" fill="#EBF3FE" filter="url(#badge-shadow)" />
+
+  <!-- Left Avatar (Teal) -->
+  <g fill="#14B8A6">
+    <circle cx="88" cy="104" r="20" />
+    <path d="M 52 184 C 52 152, 66 136, 88 136 C 110 136, 124 152, 124 184 Z" />
+  </g>
+
+  <!-- Right Avatar (Purple) -->
+  <g fill="#7C3AED">
+    <circle cx="168" cy="104" r="20" />
+    <path d="M 132 184 C 132 152, 146 136, 168 136 C 190 136, 204 152, 204 184 Z" />
+  </g>
+
+  <!-- Cutout layer to separate center avatar from side avatars -->
+  <g fill="#EBF3FE" stroke="#EBF3FE" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <circle cx="128" cy="88" r="26" />
+    <path d="M 82 188 C 82 150, 100 128, 128 128 C 156 128, 174 150, 174 188 Z" />
+  </g>
+
+  <!-- Center Avatar (Blue) -->
+  <g fill="#3B82F6">
+    <circle cx="128" cy="88" r="26" />
+    <path d="M 82 188 C 82 150, 100 128, 128 128 C 156 128, 174 150, 174 188 Z" />
+  </g>
+</svg>

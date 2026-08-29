@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Campaign Icon</title>
+  <rect x="24" y="24" width="208" height="208" rx="48" fill="#FFF3E0" />
+  <path d="M 64 110 L 64 146 L 92 146 L 140 178 L 140 78 L 92 110 Z" fill="#FB8C00" />
+  <rect x="52" y="146" width="20" height="30" rx="8" fill="#FB8C00" />
+  <path d="M 152 96 A 40 40 0 0 1 152 160" fill="none" stroke="#FFB74D" stroke-width="10" stroke-linecap="round" />
+  <path d="M 168 78 A 64 64 0 0 1 168 178" fill="none" stroke="#FFB74D" stroke-width="10" stroke-linecap="round" />
+</svg>

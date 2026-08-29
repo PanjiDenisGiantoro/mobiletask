@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Report Icon</title>
+  <defs>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.14" />
+    </filter>
+  </defs>
+
+  <!-- Document Base with Soft Drop Shadow -->
+  <g filter="url(#shadow)">
+    <path d="M 56 24
+             H 152
+             L 200 72
+             V 208
+             A 16 16 0 0 1 184 224
+             H 56
+             A 16 16 0 0 1 40 208
+             V 40
+             A 16 16 0 0 1 56 24 Z"
+          fill="#FFFFFF" />
+  </g>
+
+  <!-- Folded Top-Right Corner -->
+  <path d="M 152 24
+           V 58
+           A 14 14 0 0 0 166 72
+           H 200
+           Z"
+        fill="#2563EB" />
+
+  <!-- Top Text Lines -->
+  <rect x="68" y="54" width="90" height="10" rx="5" fill="#1E293B" />
+  <rect x="68" y="74" width="70" height="10" rx="5" fill="#CBD5E1" />
+
+  <!-- Divider Line -->
+  <rect x="68" y="104" width="116" height="2" rx="1" fill="#F1F5F9" />
+
+  <!-- Bar Chart (Bottom-Left) -->
+  <g>
+    <rect x="68" y="190" width="60" height="3" rx="1.5" fill="#E2E8F0" />
+    <rect x="70" y="152" width="14" height="38" rx="4" fill="#93C5FD" />
+    <rect x="90" y="134" width="14" height="56" rx="4" fill="#14B8A6" />
+    <rect x="110" y="118" width="14" height="72" rx="4" fill="#3B82F6" />
+  </g>
+
+  <!-- Donut Ring Chart (Bottom-Right) -->
+  <g transform="translate(166, 154) rotate(-90)">
+    <circle cx="0" cy="0" r="22" fill="none" stroke="#3B82F6" stroke-width="10"
+            stroke-dasharray="62.2 138.23" stroke-dashoffset="0" />
+    <circle cx="0" cy="0" r="22" fill="none" stroke="#14B8A6" stroke-width="10"
+            stroke-dasharray="41.5 138.23" stroke-dashoffset="-62.2" />
+    <circle cx="0" cy="0" r="22" fill="none" stroke="#7C3AED" stroke-width="10"
+            stroke-dasharray="34.5 138.23" stroke-dashoffset="-103.7" />
+  </g>
+</svg>

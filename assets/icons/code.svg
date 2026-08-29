@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Code Icon</title>
+  <rect x="24" y="24" width="208" height="208" rx="48" fill="#E8F5E9" />
+  <path d="M 96 88 L 56 128 L 96 168" fill="none" stroke="#2E7D32" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 160 88 L 200 128 L 160 168" fill="none" stroke="#2E7D32" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="142" y1="76" x2="114" y2="180" stroke="#43A047" stroke-width="14" stroke-linecap="round" />
+</svg>

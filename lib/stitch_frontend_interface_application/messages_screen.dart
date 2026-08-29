@@ -165,7 +165,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       itemCount: list.length,
-      separatorBuilder: (_, __) => const Divider(
+      separatorBuilder: (_, _) => const Divider(
         height: 1,
         indent: 80,
         color: AppColors.grey100,
@@ -274,9 +274,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
           ),
           child: chat['avatarIcon'] != null
               ? Icon(chat['avatarIcon'] as IconData, color: color, size: 24)

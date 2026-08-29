@@ -144,13 +144,16 @@ class _ProjectsScreenState extends State<ProjectsScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'projects_fab',
-        onPressed: () {},
-        backgroundColor: AppColors.heroStart,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('New Project',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 70),
+        child: FloatingActionButton.extended(
+          heroTag: 'projects_fab',
+          onPressed: () {},
+          backgroundColor: AppColors.heroStart,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('New Project',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        ),
       ),
     );
   }
@@ -192,9 +195,14 @@ class _ProjectsScreenState extends State<ProjectsScreen>
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        100,
+      ),
       itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (_, i) {
         final p = list[i];
         return ProjectCard(

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'app_theme.dart';
+import 'app_mode.dart';
 import 'projects_screen.dart';
 import 'tasks_screen.dart';
-import 'messages_screen.dart';
 import 'profile_screen.dart';
+import 'hris_screens.dart';
+import 'widgets/app_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,14 +17,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNav = 0;
+  AppMode _mode = AppMode.taskManagement;
 
-  final List<Widget> _screens = const [
-    _DashboardBody(),
-    ProjectsScreen(),
-    TasksScreen(),
-    MessagesScreen(),
-    ProfileScreen(),
-  ];
+  List<Widget> get _screens {
+    if (_mode == AppMode.hris) {
+      return [
+        const HrisDashboardBody(),
+        const AttendanceScreen(),
+        const LeaveScreen(),
+        ProfileScreen(currentMode: _mode, onModeChanged: _changeMode),
+      ];
+    }
+    return [
+      const _DashboardBody(),
+      const ProjectsScreen(),
+      const TasksScreen(),
+      ProfileScreen(currentMode: _mode, onModeChanged: _changeMode),
+    ];
+  }
+
+  void _changeMode(AppMode mode) {
+    if (mode == _mode) return;
+    setState(() => _mode = mode);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.bg,
       body: IndexedStack(index: _selectedNav, children: _screens),
       bottomNavigationBar: _FloatingNavBar(
+        mode: _mode,
         selectedIndex: _selectedNav,
         onTap: (i) => setState(() => _selectedNav = i),
       ),
@@ -38,20 +57,37 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 /// Bottom nav mengambang versi terang, sesuai referensi baru (putih, bukan
-/// gelap seperti iterasi sebelumnya).
+/// gelap seperti iterasi sebelumnya). Ikon menyesuaikan mode aplikasi
+/// (Task Management atau HRIS) yang dipilih dari Profile.
 class _FloatingNavBar extends StatelessWidget {
+  final AppMode mode;
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
-  const _FloatingNavBar({required this.selectedIndex, required this.onTap});
+  const _FloatingNavBar({
+    required this.mode,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
-  static const _icons = [
-    Icons.home_rounded,
-    Icons.folder_rounded,
+  static const _taskIcons = [
+    AppIconType.home,
+    AppIconType.folder,
     null,
-    Icons.checklist_rounded,
-    Icons.grid_view_rounded,
+    AppIconType.tasks,
+    AppIconType.person,
   ];
+
+  static const _hrisIcons = [
+    AppIconType.home,
+    AppIconType.fingerprint,
+    null,
+    AppIconType.leave,
+    AppIconType.person,
+  ];
+
+  List<AppIconType?> get _icons =>
+      mode == AppMode.hris ? _hrisIcons : _taskIcons;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +127,11 @@ class _FloatingNavBar extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 19),
+                    child: const AppIcon(
+                      AppIconType.plus,
+                      color: Colors.white,
+                      size: 19,
+                    ),
                   ),
                 );
               }
@@ -99,10 +139,11 @@ class _FloatingNavBar extends StatelessWidget {
               final selected = selectedIndex == navIndex;
               return IconButton(
                 onPressed: () => onTap(navIndex),
-                icon: Icon(
-                  _icons[i],
+                icon: AppIcon(
+                  _icons[i]!,
                   color: selected ? AppColors.heroStart : AppColors.grey400,
                   size: 21,
+                  strokeWidth: selected ? 2.0 : 1.7,
                 ),
               );
             }),
@@ -124,26 +165,22 @@ class _DashboardBody extends StatefulWidget {
 
 class _DashboardBodyState extends State<_DashboardBody> {
   final List<Map<String, dynamic>> _quickActions = const [
-    {'icon': Icons.folder_outlined, 'label': 'Proyek', 'color': Color(0xFF1565C0), 'bg': Color(0xFFE3F2FD)},
-    {'icon': Icons.checklist_outlined, 'label': 'Tugas', 'color': Color(0xFFE65100), 'bg': Color(0xFFFFF3E0)},
-    {'icon': Icons.groups_outlined, 'label': 'Tim', 'color': Color(0xFFD84315), 'bg': Color(0xFFFBE9E7)},
-    {'icon': Icons.bar_chart_rounded, 'label': 'Laporan', 'color': AppColors.success, 'bg': AppColors.successBg},
+    {'icon': 'assets/icons/project.svg', 'label': 'Proyek'},
+    {'icon': 'assets/icons/task.svg', 'label': 'Tugas'},
+    {'icon': 'assets/icons/team.svg', 'label': 'Tim'},
+    {'icon': 'assets/icons/laporan.svg', 'label': 'Laporan'},
   ];
 
   final List<Map<String, dynamic>> _priorities = const [
     {
       'title': 'Backend API v2',
-      'icon': Icons.code_outlined,
-      'iconColor': AppColors.success,
-      'iconBg': AppColors.successBg,
+      'icon': 'assets/icons/code.svg',
       'meta': '18 tugas · 1 minggu',
       'progress': '40%',
     },
     {
       'title': 'Marketing Q2',
-      'icon': Icons.campaign_outlined,
-      'iconColor': AppColors.warning,
-      'iconBg': AppColors.warningBg,
+      'icon': 'assets/icons/campaign.svg',
       'meta': '10 tugas · 3 hari',
       'progress': '80%',
     },
@@ -160,7 +197,12 @@ class _DashboardBodyState extends State<_DashboardBody> {
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+          100,
+        ),
         children: [
           _buildHeroCard(context),
           const SizedBox(height: AppSpacing.lg),
@@ -174,10 +216,12 @@ class _DashboardBodyState extends State<_DashboardBody> {
           const SizedBox(height: AppSpacing.lg),
           const _SectionTitle('Aktivitas terbaru'),
           const SizedBox(height: AppSpacing.sm),
-          ..._activity.map((a) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _ActivityTile(activity: a),
-              )),
+          ..._activity.map(
+            (a) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: _ActivityTile(activity: a),
+            ),
+          ),
         ],
       ),
     );
@@ -201,7 +245,10 @@ class _DashboardBodyState extends State<_DashboardBody> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(AppRadius.full),
@@ -209,31 +256,64 @@ class _DashboardBodyState extends State<_DashboardBody> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Tim Alpha', style: TextStyle(color: Colors.white, fontSize: 11)),
-                    Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 14),
+    Text(
+                      'Tim Alpha',
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                    SizedBox(width: 2),
+                    AppIcon(
+                      AppIconType.chevronDown,
+                      color: Colors.white,
+                      size: 14,
+                      strokeWidth: 2,
+                    ),
                   ],
                 ),
               ),
               const Spacer(),
-              const Icon(Icons.notifications_outlined, color: Colors.white, size: 18),
+              const AppIcon(
+                AppIconType.bell,
+                color: Colors.white,
+                size: 18,
+              ),
               const SizedBox(width: 10),
               const CircleAvatar(
                 radius: 13,
                 backgroundColor: Colors.white,
-                child: Text('P',
-                    style: TextStyle(color: AppColors.heroStart, fontWeight: FontWeight.w700, fontSize: 11)),
+                child: Text(
+                  'P',
+                  style: TextStyle(
+                    color: AppColors.heroStart,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          const Text('Halo, Panji',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+          const Text(
+            'Halo, Panji',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text('Ini progres proyek kamu hari ini',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+          Text(
+            'Ini progres proyek kamu hari ini',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm + 4),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm + 4,
+              vertical: 10,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(AppRadius.medium),
@@ -247,26 +327,49 @@ class _DashboardBodyState extends State<_DashboardBody> {
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.folder_outlined, color: Colors.white, size: 15),
+                  child: const AppIcon(
+                    AppIconType.folder,
+                    color: Colors.white,
+                    size: 15,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('12 proyek', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-                      Text('sedang berjalan', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                      Text(
+                        '12 proyek',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'sedang berjalan',
+                        style: TextStyle(color: Colors.white70, fontSize: 10),
+                      ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm + 4,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.white,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
-                  child: const Text('+ Proyek',
-                      style: TextStyle(color: AppColors.heroStart, fontSize: 11, fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    '+ Proyek',
+                    style: TextStyle(
+                      color: AppColors.heroStart,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -288,21 +391,47 @@ class _DashboardBodyState extends State<_DashboardBody> {
                         children: [
                           _tag('Aktif', AppColors.success, AppColors.successBg),
                           const SizedBox(width: 6),
-                          _tag('Prioritas tinggi', AppColors.error, AppColors.errorBg),
+                          _tag(
+                            'Prioritas tinggi',
+                            AppColors.error,
+                            AppColors.errorBg,
+                          ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
-                      const Text('Mobile App Redesign',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.grey900)),
+                      const Text(
+                        'Mobile App Redesign',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.grey900,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      const Text('Sprint 3 · Tim mobile',
-                          style: TextStyle(fontSize: 11, color: AppColors.grey500)),
+                      const Text(
+                        'Sprint 3 · Tim mobile',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.grey500,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.sm),
                       const Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.grey500),
+                          AppIcon(
+                            AppIconType.calendar,
+                            size: 11,
+                            color: AppColors.grey500,
+                            strokeWidth: 1.4,
+                          ),
                           SizedBox(width: 4),
-                          Text('Deadline 20 Mei', style: TextStyle(fontSize: 11, color: AppColors.grey500)),
+                          Text(
+                            'Deadline 20 Mei',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.grey500,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -321,8 +450,18 @@ class _DashboardBodyState extends State<_DashboardBody> {
   Widget _tag(String label, Color color, Color bg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.full)),
-      child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 
@@ -334,18 +473,20 @@ class _DashboardBodyState extends State<_DashboardBody> {
           onTap: () {},
           child: Column(
             children: [
-              Container(
+              SvgPicture.asset(
+                a['icon'] as String,
                 width: 56,
                 height: 56,
-                decoration: BoxDecoration(
-                  color: a['bg'] as Color,
-                  borderRadius: BorderRadius.circular(AppRadius.large),
-                ),
-                child: Icon(a['icon'] as IconData, color: a['color'] as Color, size: 24),
               ),
               const SizedBox(height: 6),
-              Text(a['label'] as String,
-                  style: const TextStyle(fontSize: 11, color: AppColors.grey700, fontWeight: FontWeight.w500)),
+              Text(
+                a['label'] as String,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.grey700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         );
@@ -360,8 +501,14 @@ class _DashboardBodyState extends State<_DashboardBody> {
         _SectionTitle(title),
         GestureDetector(
           onTap: () {},
-          child: const Text('Lihat semua',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.heroStart)),
+          child: const Text(
+            'Lihat semua',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.heroStart,
+            ),
+          ),
         ),
       ],
     );
@@ -372,7 +519,9 @@ class _DashboardBodyState extends State<_DashboardBody> {
       children: _priorities.map((p) {
         return Expanded(
           child: Container(
-            margin: EdgeInsets.only(right: p == _priorities.first ? AppSpacing.sm : 0),
+            margin: EdgeInsets.only(
+              right: p == _priorities.first ? AppSpacing.sm : 0,
+            ),
             padding: const EdgeInsets.all(AppSpacing.sm + 4),
             decoration: BoxDecoration(
               color: AppColors.white,
@@ -382,24 +531,33 @@ class _DashboardBodyState extends State<_DashboardBody> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: p['iconBg'] as Color,
-                    borderRadius: BorderRadius.circular(9),
+                SvgPicture.asset(p['icon'] as String, width: 32, height: 32),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  p['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.grey900,
                   ),
-                  child: Icon(p['icon'] as IconData, color: p['iconColor'] as Color, size: 15),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  p['meta'] as String,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.grey500,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(p['title'] as String,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.grey900)),
-                const SizedBox(height: 2),
-                Text(p['meta'] as String, style: const TextStyle(fontSize: 10, color: AppColors.grey500)),
-                const SizedBox(height: AppSpacing.sm),
-                Text(p['progress'] as String,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.heroStart)),
+                Text(
+                  p['progress'] as String,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.heroStart,
+                  ),
+                ),
               ],
             ),
           ),
@@ -415,7 +573,10 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14));
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14),
+    );
   }
 }
 
@@ -439,9 +600,18 @@ class _ProgressRing extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('${(progress * 100).round()}%',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.grey900)),
-              const Text('selesai', style: TextStyle(fontSize: 8, color: AppColors.grey500)),
+              Text(
+                '${(progress * 100).round()}%',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.grey900,
+                ),
+              ),
+              const Text(
+                'selesai',
+                style: TextStyle(fontSize: 8, color: AppColors.grey500),
+              ),
             ],
           ),
         ],
@@ -481,7 +651,8 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) => oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _ActivityTile extends StatelessWidget {
@@ -493,9 +664,13 @@ class _ActivityTile extends StatelessWidget {
     final done = activity['done'] == true;
     final color = done ? AppColors.success : AppColors.error;
     final bg = done ? AppColors.successBg : AppColors.errorBg;
+    final icon = done ? 'assets/icons/check.svg' : 'assets/icons/alert.svg';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm + 4,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppRadius.medium),
@@ -503,30 +678,46 @@ class _ActivityTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-            child: Icon(done ? Icons.check_rounded : Icons.priority_high_rounded, color: color, size: 18),
-          ),
+          SvgPicture.asset(icon, width: 34, height: 34),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(activity['title'] as String,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.grey900)),
-                Text(activity['date'] as String, style: const TextStyle(fontSize: 10, color: AppColors.grey500)),
+                Text(
+                  activity['title'] as String,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.grey900,
+                  ),
+                ),
+                Text(
+                  activity['date'] as String,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.grey500,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.full)),
-            child: Text(done ? 'Selesai' : 'Terlambat',
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: Text(
+              done ? 'Selesai' : 'Terlambat',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
           ),
         ],
       ),
