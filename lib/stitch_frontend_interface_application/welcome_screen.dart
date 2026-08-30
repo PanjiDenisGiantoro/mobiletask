@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_theme.dart';
 import 'login_form_screen.dart';
+import 'register_form_screen.dart';
 import 'home_screen.dart';
 import 'widgets/app_icons.dart';
 
@@ -22,6 +23,13 @@ class _OnboardSlide {
     required this.chip,
     required this.accent,
   });
+}
+
+class _QuickMenuItem {
+  final String asset;
+  final String label;
+
+  const _QuickMenuItem({required this.asset, required this.label});
 }
 
 /// Onboarding carousel: tiap slide menampilkan mockup produk (SVG di
@@ -71,6 +79,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     ),
   ];
 
+  static const _quickMenu = [
+    _QuickMenuItem(asset: 'assets/icons/project.svg', label: 'Proyek'),
+    _QuickMenuItem(asset: 'assets/icons/task.svg', label: 'Tugas'),
+    _QuickMenuItem(asset: 'assets/icons/team.svg', label: 'Tim'),
+    _QuickMenuItem(asset: 'assets/icons/laporan.svg', label: 'Laporan'),
+  ];
+
   bool get _isLast => _page == _slides.length - 1;
 
   @override
@@ -114,6 +129,34 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         transitionDuration: const Duration(milliseconds: 900),
         reverseTransitionDuration: const Duration(milliseconds: 600),
         pageBuilder: (_, _, _) => const LoginFormScreen(),
+        transitionsBuilder: (_, animation, _, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutExpo,
+          );
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(curved);
+          final scale = Tween<double>(begin: 0.94, end: 1.0).animate(curved);
+          return SlideTransition(
+            position: slide,
+            child: FadeTransition(
+              opacity: curved,
+              child: ScaleTransition(scale: scale, child: child),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openRegisterForm() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 900),
+        reverseTransitionDuration: const Duration(milliseconds: 600),
+        pageBuilder: (_, _, _) => const RegisterFormScreen(),
         transitionsBuilder: (_, animation, _, child) {
           final curved = CurvedAnimation(
             parent: animation,
@@ -402,71 +445,128 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   Widget _buildFinalActions() {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: OutlinedButton(
-              onPressed: _openLoginForm,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-              ),
-              child: const Text(
-                'Masuk',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+        _buildQuickMenuPreview(),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: OutlinedButton(
+                  onPressed: _openLoginForm,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                  child: const Text(
+                    'Masuk',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _openRegisterForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.heroStart,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Daftar',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            InkWell(
+              onTap: _quickLogin,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: Colors.white12,
+                  shape: BoxShape.circle,
+                ),
+                child: const AppIcon(
+                  AppIconType.fingerprint,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Preview 4 menu cepat Flovig (sama seperti "Akses cepat" di dashboard)
+  /// supaya user baru langsung tahu fitur utama sebelum masuk/daftar.
+  Widget _buildQuickMenuPreview() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Menu cepat Flovig',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _openLoginForm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.heroStart,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                elevation: 0,
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: _quickMenu.map((item) {
+            return GestureDetector(
+              onTap: _openLoginForm,
+              child: Column(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      color: Colors.white12,
+                      shape: BoxShape.circle,
+                    ),
+                    child: SvgPicture.asset(item.asset),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-              child: const Text(
-                'Daftar',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        InkWell(
-          onTap: _quickLogin,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              color: Colors.white12,
-              shape: BoxShape.circle,
-            ),
-            child: const AppIcon(
-              AppIconType.fingerprint,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
+            );
+          }).toList(),
         ),
       ],
     );

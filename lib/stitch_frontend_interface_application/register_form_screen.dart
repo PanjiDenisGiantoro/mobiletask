@@ -2,43 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'app_theme.dart';
 import 'home_screen.dart';
-import 'register_form_screen.dart';
+import 'login_form_screen.dart';
 
-/// Form login mengikuti referensi desain login1.png (header lengkung +
-/// ilustrasi, kartu putih dengan field pill, tombol sign-in sosial),
-/// warna disesuaikan ke palet biru Flovig. Ilustrasi header memakai
-/// `assets/lottie/login.json`.
-class LoginFormScreen extends StatefulWidget {
-  const LoginFormScreen({super.key});
+/// Form register, gaya visual mengikuti LoginFormScreen (header lengkung +
+/// ilustrasi, kartu putih dengan field pill) supaya alur auth terasa satu
+/// kesatuan.
+class RegisterFormScreen extends StatefulWidget {
+  const RegisterFormScreen({super.key});
 
   @override
-  State<LoginFormScreen> createState() => _LoginFormScreenState();
+  State<RegisterFormScreen> createState() => _RegisterFormScreenState();
 }
 
-class _LoginFormScreenState extends State<LoginFormScreen> {
+class _RegisterFormScreenState extends State<RegisterFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (_formKey.currentState?.validate() != true) return;
-
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    if (email != 'admin' || password != 'admin') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email atau password salah')),
-      );
-      return;
-    }
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -46,9 +41,9 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
     );
   }
 
-  void _openRegisterForm() {
+  void _openLoginForm() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const RegisterFormScreen()),
+      MaterialPageRoute(builder: (_) => const LoginFormScreen()),
     );
   }
 
@@ -68,10 +63,20 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Login',
+                      'Daftar',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.grey900),
                     ),
                     const SizedBox(height: AppSpacing.lg),
+                    TextFormField(
+                      controller: _nameController,
+                      keyboardType: TextInputType.name,
+                      decoration: _inputDecoration(hint: 'Nama lengkap', icon: Icons.person_outline),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Nama wajib diisi';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -98,17 +103,30 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                       ),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Password wajib diisi';
+                        if (v.length < 6) return 'Password minimal 6 karakter';
                         return null;
                       },
                     ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                        child: const Text('Lupa Password?',
-                            style: TextStyle(color: AppColors.primary600, fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _confirmController,
+                      obscureText: _obscureConfirm,
+                      decoration: _inputDecoration(
+                        hint: 'Konfirmasi password',
+                        icon: Icons.lock_outline,
+                        suffix: IconButton(
+                          icon: Icon(
+                            _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: AppColors.grey400,
+                          ),
+                          onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                        ),
                       ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
+                        if (v != _passwordController.text) return 'Password tidak sama';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: AppSpacing.md),
                     SizedBox(
@@ -121,22 +139,18 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
                         ),
-                        child: const Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                        child: const Text('Daftar', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildDividerWithText('Atau masuk dengan'),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildSocialRow(),
                     const SizedBox(height: AppSpacing.lg),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Belum punya akun? ", style: TextStyle(color: AppColors.grey700, fontSize: 13)),
+                        const Text('Sudah punya akun? ', style: TextStyle(color: AppColors.grey700, fontSize: 13)),
                         TextButton(
-                          onPressed: _openRegisterForm,
+                          onPressed: _openLoginForm,
                           style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                          child: const Text('Daftar',
+                          child: const Text('Masuk',
                               style: TextStyle(color: AppColors.primary600, fontWeight: FontWeight.w700, fontSize: 13)),
                         ),
                       ],
@@ -189,12 +203,12 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Hello!',
+                            'Halo!',
                             style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Selamat datang di Flovig',
+                            'Buat akun untuk mulai pakai Flovig',
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                           ),
                         ],
@@ -221,49 +235,6 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
         repeat: true,
         errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
-    );
-  }
-
-  Widget _buildDividerWithText(String text) {
-    return Row(
-      children: [
-        const Expanded(child: Divider(color: AppColors.grey100, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          child: Text(text, style: const TextStyle(color: AppColors.grey400, fontSize: 12)),
-        ),
-        const Expanded(child: Divider(color: AppColors.grey100, thickness: 1)),
-      ],
-    );
-  }
-
-  Widget _buildSocialRow() {
-    final items = [
-      (Icons.facebook, const Color(0xFF1877F2)),
-      (Icons.g_mobiledata_rounded, const Color(0xFFEA4335)),
-      (Icons.alternate_email_rounded, AppColors.primary600),
-      (Icons.apple, AppColors.grey900),
-    ];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: items.map((item) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: InkWell(
-            onTap: () {},
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.grey100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(item.$1, color: item.$2, size: 24),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 
