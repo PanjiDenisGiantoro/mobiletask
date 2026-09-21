@@ -38,6 +38,27 @@ dependencies:
   flutter_svg: ^2.0.10+1
   lottie: ^3.3.1
   google_fonts: ^6.2.1
+  image_picker: ^1.1.2
+
+  # Navigation
+  go_router: ^14.6.2
+
+  # Animation packages
+  animate_do: ^3.3.4
+  flutter_animate: ^4.5.2
+  rive: ^0.13.20
+
+  # Essential UI packages
+  shimmer: ^3.0.0
+  flutter_slidable: ^3.1.2
+  cached_network_image: ^3.4.1
+  table_calendar: ^3.1.3
+  fl_chart: ^0.69.2
+
+  # Navigation & input
+  dropdown_button2: ^2.3.9
+  flutter_typeahead: ^5.2.0
+  pinput: ^5.0.1
 
 dev_dependencies:
   flutter_test:
@@ -62,7 +83,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/flovig_logo.webp
+    - assets/images/flovig_logo.png
     - assets/icons/
     - assets/lottie/
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
-import 'home_screen.dart';
+import 'otp_verification_sheet.dart';
+import 'widgets/hero_banner_carousel.dart';
 
 /// Form login mengikuti referensi desain login1.png (header lengkung +
 /// ilustrasi, kartu putih dengan field pill, tombol sign-in sosial),
@@ -39,10 +40,7 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
+    context.go('/home');
   }
 
   @override
@@ -97,7 +95,7 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () => showOtpVerificationSheet(context),
                         style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
                         child: const Text('Lupa Password?',
                             style: TextStyle(color: AppColors.primary600, fontWeight: FontWeight.w600, fontSize: 13)),
@@ -127,7 +125,7 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                       children: [
                         const Text("Belum punya akun? ", style: TextStyle(color: AppColors.grey700, fontSize: 13)),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () => context.pushReplacement('/register'),
                           style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
                           child: const Text('Daftar',
                               style: TextStyle(color: AppColors.primary600, fontWeight: FontWeight.w700, fontSize: 13)),
@@ -145,75 +143,20 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(60),
-        bottomRight: Radius.circular(60),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 44),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primary900, AppColors.primary700, AppColors.primary600],
-          ),
-        ),
-        child: SafeArea(
+    return Stack(
+      children: [
+        const HeroBannerCarousel(),
+        SafeArea(
           bottom: false,
-          child: Stack(
-            children: [
-              Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Hello!',
-                            style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Selamat datang di Flovig',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildIllustration(),
-                  ],
-                ),
-              ),
-            ],
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildIllustration() {
-    return SizedBox(
-      width: 108,
-      height: 108,
-      child: Lottie.asset(
-        'assets/lottie/login.json',
-        fit: BoxFit.contain,
-        repeat: true,
-        errorBuilder: (_, _, _) => const SizedBox.shrink(),
-      ),
+      ],
     );
   }
 

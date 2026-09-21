@@ -1,6 +1,9 @@
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'app_theme.dart';
 import 'widgets/project_card.dart';
+import 'widgets/skeleton_list.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -12,7 +15,9 @@ class ProjectsScreen extends StatefulWidget {
 class _ProjectsScreenState extends State<ProjectsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _categoryFilter;
 
   final List<Map<String, dynamic>> _projects = [
     {
@@ -72,17 +77,26 @@ class _ProjectsScreenState extends State<ProjectsScreen>
     },
   ];
 
+  bool _loading = true;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _loading = false);
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
+
+  List<String> get _categories =>
+      _projects.map((p) => p['category'] as String).toSet().toList()..sort();
 
   List<Map<String, dynamic>> _filtered(String status) {
     return _projects.where((p) {
@@ -91,7 +105,8 @@ class _ProjectsScreenState extends State<ProjectsScreen>
           .toString()
           .toLowerCase()
           .contains(_searchQuery.toLowerCase());
-      return matchStatus && matchSearch;
+      final matchCategory = _categoryFilter == null || p['category'] == _categoryFilter;
+      return matchStatus && matchSearch && matchCategory;
     }).toList();
   }
 
@@ -123,9 +138,30 @@ class _ProjectsScreenState extends State<ProjectsScreen>
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.white),
-            onPressed: () {},
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: DropdownButton2<String>(
+              value: _categoryFilter,
+              hint: const Text('Semua', style: TextStyle(color: Colors.white, fontSize: 13)),
+              underline: const SizedBox.shrink(),
+              iconStyleData: const IconStyleData(icon: Icon(Icons.filter_list, color: Colors.white)),
+              buttonStyleData: const ButtonStyleData(padding: EdgeInsets.symmetric(horizontal: 4)),
+              dropdownStyleData: DropdownStyleData(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.medium),
+                ),
+              ),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Semua Kategori')),
+                ..._categories.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+              ],
+              onChanged: (v) => setState(() => _categoryFilter = v),
+              selectedItemBuilder: (context) => [
+                const Text('Semua', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ..._categories.map((c) => Text(c, style: const TextStyle(color: Colors.white, fontSize: 13))),
+              ],
+            ),
           ),
         ],
       ),
@@ -133,14 +169,16 @@ class _ProjectsScreenState extends State<ProjectsScreen>
         children: [
           _buildSearchBar(),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildProjectList(_filtered('all')),
-                _buildProjectList(_filtered('active')),
-                _buildProjectList(_filtered('completed')),
-              ],
-            ),
+            child: _loading
+                ? const SkeletonList(itemHeight: 96)
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildProjectList(_filtered('all')),
+                      _buildProjectList(_filtered('active')),
+                      _buildProjectList(_filtered('completed')),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -162,20 +200,43 @@ class _ProjectsScreenState extends State<ProjectsScreen>
     return Container(
       color: AppColors.white,
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: TextField(
-        onChanged: (v) => setState(() => _searchQuery = v),
-        decoration: InputDecoration(
-          hintText: 'Search projects...',
-          hintStyle: const TextStyle(color: AppColors.grey400, fontSize: 14),
-          prefixIcon: const Icon(Icons.search, color: AppColors.grey400),
-          filled: true,
-          fillColor: AppColors.grey100,
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            borderSide: BorderSide.none,
-          ),
+      child: TypeAheadField<String>(
+        controller: _searchController,
+        suggestionsCallback: (pattern) {
+          if (pattern.isEmpty) return const [];
+          return _projects
+              .map((p) => p['title'] as String)
+              .where((title) => title.toLowerCase().contains(pattern.toLowerCase()))
+              .toList();
+        },
+        onSelected: (suggestion) {
+          _searchController.text = suggestion;
+          setState(() => _searchQuery = suggestion);
+        },
+        itemBuilder: (context, suggestion) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Text(suggestion, style: const TextStyle(fontSize: 13.5, color: AppColors.grey900)),
         ),
+        emptyBuilder: (context) => const SizedBox.shrink(),
+        builder: (context, controller, focusNode) {
+          return TextField(
+            controller: controller,
+            focusNode: focusNode,
+            onChanged: (v) => setState(() => _searchQuery = v),
+            decoration: InputDecoration(
+              hintText: 'Search projects...',
+              hintStyle: const TextStyle(color: AppColors.grey400, fontSize: 14),
+              prefixIcon: const Icon(Icons.search, color: AppColors.grey400),
+              filled: true,
+              fillColor: AppColors.grey100,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

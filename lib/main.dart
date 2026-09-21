@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'splash_screen.dart';
+import 'router.dart';
 import 'stitch_frontend_interface_application/app_theme.dart';
-import 'stitch_frontend_interface_application/welcome_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,11 +11,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Flovig',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const SplashScreen(nextScreen: WelcomeScreen()),
+      routerConfig: appRouter,
     );
   }
 }

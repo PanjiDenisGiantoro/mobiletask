@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Flovig butuh akses kamera untuk melampirkan foto pada tugas.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Flovig butuh akses galeri untuk melampirkan foto pada tugas.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

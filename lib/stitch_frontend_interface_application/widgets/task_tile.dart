@@ -1,5 +1,7 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../app_theme.dart';
+import 'activity_type.dart';
 
 enum TaskPriority { high, medium, low }
 
@@ -10,6 +12,8 @@ class TaskTile extends StatelessWidget {
   final String dueDate;
   final bool isDone;
   final ValueChanged<bool?> onChanged;
+  final ActivityType? type;
+  final Uint8List? photo;
 
   const TaskTile({
     super.key,
@@ -19,6 +23,8 @@ class TaskTile extends StatelessWidget {
     required this.dueDate,
     required this.isDone,
     required this.onChanged,
+    this.type,
+    this.photo,
   });
 
   Color get _priorityColor => switch (priority) {
@@ -62,6 +68,13 @@ class TaskTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.xs),
+          if (photo != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.memory(photo!, width: 34, height: 34, fit: BoxFit.cover),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,13 +90,30 @@ class TaskTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  project,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.grey700,
+                if (type != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(type!.icon, size: 11, color: type!.color),
+                      const SizedBox(width: 3),
+                      Text(
+                        type!.label,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: type!.color,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    project,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.grey700,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

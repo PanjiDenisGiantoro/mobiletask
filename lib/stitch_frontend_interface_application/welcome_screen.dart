@@ -1,204 +1,103 @@
-import 'dart:math' as math;
-
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_theme.dart';
-import 'login_form_screen.dart';
-import 'home_screen.dart';
 import 'widgets/app_icons.dart';
+import 'widgets/hero_banner_carousel.dart';
 
-class _OnboardSlide {
+class _WelcomeMenu {
   final String asset;
   final String title;
-  final String subtitle;
-  final String chip;
   final Color accent;
 
-  const _OnboardSlide({
+  const _WelcomeMenu({
     required this.asset,
     required this.title,
-    required this.subtitle,
-    required this.chip,
     required this.accent,
   });
 }
 
-/// Onboarding carousel: tiap slide menampilkan mockup produk (SVG di
-/// assets/icons) melayang dengan tilt 3D yang mengikuti gestur swipe,
-/// warna aksen & progress bar berubah mengikuti konten tiap slide.
-class WelcomeScreen extends StatefulWidget {
+/// Welcome page bergaya aplikasi mobile modern (referensi: super-app
+/// perbankan) — hero banner lengkung di atas, wordmark brand besar di
+/// tengah, baris 4 menu akses cepat, lalu tombol Masuk besar + link Daftar.
+class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
-  @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
-}
-
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with SingleTickerProviderStateMixin {
-  final _controller = PageController();
-  late final AnimationController _floatController;
-  int _page = 0;
-
-  static const _slides = [
-    _OnboardSlide(
+  static const _menus = [
+    _WelcomeMenu(
       asset: 'assets/icons/project.svg',
-      title: 'Kelola Semua Proyek\ndalam Satu Tempat',
-      subtitle: 'Atur proyek, deadline, dan progres tim tanpa ribet.',
-      chip: '4 proyek aktif',
+      title: 'Proyek',
       accent: AppColors.info,
     ),
-    _OnboardSlide(
+    _WelcomeMenu(
       asset: 'assets/icons/task.svg',
-      title: 'Pantau Tugas\nSecara Real-Time',
-      subtitle: 'Tandai selesai dan lihat prioritas dalam genggaman.',
-      chip: '3 dari 5 selesai',
-      accent: AppColors.accent400,
+      title: 'Tugas',
+      accent: AppColors.warning,
     ),
-    _OnboardSlide(
+    _WelcomeMenu(
       asset: 'assets/icons/team.svg',
-      title: 'Kolaborasi Tim\nJadi Lebih Mudah',
-      subtitle: 'Diskusi dan koordinasi tanpa hambatan jarak.',
-      chip: '12 anggota online',
+      title: 'Tim',
       accent: AppColors.heroStart,
     ),
-    _OnboardSlide(
+    _WelcomeMenu(
       asset: 'assets/icons/laporan.svg',
-      title: 'Satu Akun untuk\nSemua Kebutuhan Kerja',
-      subtitle: 'Semua fitur Flovig, dalam satu genggaman.',
-      chip: '+18% minggu ini',
-      accent: AppColors.success,
+      title: 'Laporan',
+      accent: AppColors.accent400,
     ),
   ];
 
-  bool get _isLast => _page == _slides.length - 1;
+  void _openLogin(BuildContext context) => context.push('/login');
 
-  @override
-  void initState() {
-    super.initState();
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-  }
+  void _openRegister(BuildContext context) => context.push('/register');
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _floatController.dispose();
-    super.dispose();
-  }
-
-  void _next() {
-    if (_isLast) {
-      _openLoginForm();
-      return;
-    }
-    _controller.nextPage(
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  void _skip() {
-    _controller.animateToPage(
-      _slides.length - 1,
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  void _openLoginForm() {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 900),
-        reverseTransitionDuration: const Duration(milliseconds: 600),
-        pageBuilder: (_, _, _) => const LoginFormScreen(),
-        transitionsBuilder: (_, animation, _, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutExpo,
-          );
-          final slide = Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(curved);
-          final scale = Tween<double>(begin: 0.94, end: 1.0).animate(curved);
-          return SlideTransition(
-            position: slide,
-            child: FadeTransition(
-              opacity: curved,
-              child: ScaleTransition(scale: scale, child: child),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _quickLogin() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
-  }
+  void _quickLogin(BuildContext context) => context.go('/home');
 
   @override
   Widget build(BuildContext context) {
-    final accent = _slides[_page].accent;
     return Scaffold(
-      backgroundColor: AppColors.onboardingBg,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          _buildAmbientGlow(accent),
+          _buildBottomBlobs(),
           SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.md,
-                    AppSpacing.lg,
-                    0,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const HeroBannerCarousel(),
+                  Transform.translate(
+                    offset: const Offset(0, -24),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.lg),
+                        child: _buildSupportButton(context),
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildProgressTrack(accent)),
-                      if (!_isLast) ...[
-                        const SizedBox(width: AppSpacing.md),
-                        GestureDetector(
-                          onTap: _skip,
-                          child: const Text(
-                            'Lewati',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildBrandLockup(),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: _buildMenuRow(),
                   ),
-                ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _controller,
-                    itemCount: _slides.length,
-                    onPageChanged: (i) => setState(() => _page = i),
-                    itemBuilder: (context, i) => _buildSlide(i, _slides[i]),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: _buildAuthActions(context),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text(
+                    'v1.0.0',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.grey400, fontSize: 12),
                   ),
-                  child: _isLast ? _buildFinalActions() : _buildNextButton(),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+              ),
             ),
           ),
         ],
@@ -206,269 +105,217 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
-  Widget _buildAmbientGlow(Color accent) {
-    return Positioned(
-      top: -60,
-      right: -50,
-      child: IgnorePointer(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
-          width: 260,
-          height: 260,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                accent.withValues(alpha: 0.28),
-                accent.withValues(alpha: 0),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressTrack(Color accent) {
-    return Row(
-      children: List.generate(_slides.length, (i) {
-        final active = i <= _page;
-        return Expanded(
-          child: Container(
-            margin: EdgeInsets.only(right: i == _slides.length - 1 ? 0 : 6),
-            height: 4,
-            decoration: BoxDecoration(
-              color: active ? null : AppColors.onboardingTrack,
-              gradient: active
-                  ? LinearGradient(
-                      colors: [accent, accent.withValues(alpha: 0.55)],
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildSlide(int index, _OnboardSlide slide) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildTiltCard(index, slide),
-          const SizedBox(height: AppSpacing.xxl),
-          Text(
-            slide.title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-              letterSpacing: -0.4,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            slide.subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white60,
-              fontSize: 14,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTiltCard(int index, _OnboardSlide slide) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_controller, _floatController]),
-      builder: (context, child) {
-        var page = _page.toDouble();
-        if (_controller.hasClients && _controller.position.haveDimensions) {
-          page = _controller.page ?? _page.toDouble();
-        }
-        final delta = (index - page).clamp(-1.0, 1.0);
-        final float = math.sin(_floatController.value * math.pi * 2) * 5;
-        return Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0015)
-            ..rotateY(delta * -0.55)
-            ..translateByDouble(0.0, float, 0.0, 1.0),
-          child: Opacity(
-            opacity: (1 - delta.abs() * 0.4).clamp(0.0, 1.0),
-            child: child,
-          ),
+  Widget _buildSupportButton(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.full),
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bantuan akan segera hadir')),
         );
       },
-      child: SizedBox(
-        width: 200,
-        height: 200,
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    slide.accent.withValues(alpha: 0.35),
-                    slide.accent.withValues(alpha: 0),
-                  ],
-                ),
-              ),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
-            SvgPicture.asset(slide.asset, width: 168, height: 168),
-            Positioned(right: -4, bottom: 6, child: _buildChip(slide)),
           ],
         ),
+        child: const Icon(Icons.headset_mic_outlined, color: AppColors.primary700, size: 22),
       ),
     );
   }
 
-  Widget _buildChip(_OnboardSlide slide) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1F38),
-        borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+  Widget _buildBrandLockup() {
+    return Column(
+      children: [
+        Image.asset(
+          'assets/images/flovig_logo.png',
+          width: 88,
+          height: 88,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Flovig',
+          style: GoogleFonts.spaceGrotesk(
+            color: AppColors.grey900,
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.6,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: slide.accent,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            slide.chip,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNextButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _next,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.heroStart,
-          shape: RoundedRectangleBorder(
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+            color: AppColors.accent400,
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
-          elevation: 0,
         ),
-        child: const Text(
-          'Lanjut',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
+        const SizedBox(height: 10),
+        const Text(
+          'Project & Team Management',
+          style: TextStyle(color: AppColors.grey500, fontSize: 12.5, fontWeight: FontWeight.w500),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildFinalActions() {
+  Widget _buildMenuRow() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _menus
+          .asMap()
+          .entries
+          .map((e) => FadeInUp(
+                delay: Duration(milliseconds: 100 * e.key),
+                duration: const Duration(milliseconds: 500),
+                child: _buildMenuItem(e.value),
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildMenuItem(_WelcomeMenu menu) {
+    return Column(
       children: [
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: OutlinedButton(
-              onPressed: _openLoginForm,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-              ),
-              child: const Text(
-                'Masuk',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+        Container(
+          width: 56,
+          height: 56,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: menu.accent.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(18),
           ),
+          child: SvgPicture.asset(menu.asset, fit: BoxFit.contain),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _openLoginForm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.heroStart,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Daftar',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        InkWell(
-          onTap: _quickLogin,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              color: Colors.white12,
-              shape: BoxShape.circle,
-            ),
-            child: const AppIcon(
-              AppIconType.fingerprint,
-              color: Colors.white,
-              size: 24,
-            ),
+        const SizedBox(height: 8),
+        Text(
+          menu.title,
+          style: const TextStyle(
+            color: AppColors.grey700,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAuthActions(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 58,
+                child: ElevatedButton(
+                  onPressed: () => _openLogin(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent400,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                  child: const Text(
+                    'Masuk',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            InkWell(
+              onTap: () => _quickLogin(context),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: AppColors.accent400.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.accent400.withValues(alpha: 0.4)),
+                ),
+                child: const AppIcon(
+                  AppIconType.fingerprint,
+                  color: AppColors.accent400,
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Belum punya akun? ',
+              style: TextStyle(color: AppColors.grey700, fontSize: 13),
+            ),
+            GestureDetector(
+              onTap: () => _openRegister(context),
+              child: const Text(
+                'Daftar',
+                style: TextStyle(
+                  color: AppColors.primary600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomBlobs() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Stack(
+          children: [
+            Positioned(
+              bottom: -100,
+              left: -70,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.accent200.withValues(alpha: 0.18),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -110,
+              right: -80,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.heroEnd.withValues(alpha: 0.14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

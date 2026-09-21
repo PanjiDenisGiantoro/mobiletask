@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary900 = Color(0xFF0D1B6E);
-  static const primary800 = Color(0xFF1A237E);
-  static const primary700 = Color(0xFF283593);
-  static const primary600 = Color(0xFF3949AB);
-  static const primary400 = Color(0xFF5C6BC0);
-  static const primary200 = Color(0xFF9FA8DA);
-  static const primary50  = Color(0xFFE8EAF6);
+  // Palet biru-teal mengikuti gradasi logo Flovig.
+  static const primary900 = Color(0xFF062A4D);
+  static const primary800 = Color(0xFF0A3E70);
+  static const primary700 = Color(0xFF0D5695);
+  static const primary600 = Color(0xFF0F7BD4);
+  static const primary400 = Color(0xFF4FA6E8);
+  static const primary200 = Color(0xFFA9D6F6);
+  static const primary50  = Color(0xFFE7F4FD);
 
-  static const accent400  = Color(0xFF26C6DA);
-  static const accent200  = Color(0xFF80DEEA);
+  static const accent400  = Color(0xFF14C6BB);
+  static const accent200  = Color(0xFF8FE9DD);
 
   static const success    = Color(0xFF43A047);
   static const warning    = Color(0xFFFB8C00);
@@ -28,16 +29,17 @@ class AppColors {
   static const grey100    = Color(0xFFF5F5F5);
   static const white      = Color(0xFFFFFFFF);
 
-  static const heroStart  = Color(0xFF6D5DF6);
-  static const heroMid    = Color(0xFF8B6DF7);
-  static const heroEnd    = Color(0xFFB18CFF);
+  /// Gradasi hero mengikuti ikon logo: biru -> cyan -> teal.
+  static const heroStart  = Color(0xFF0A87E0);
+  static const heroMid    = Color(0xFF17B4C7);
+  static const heroEnd    = Color(0xFF14D6B4);
 
-  /// Latar layar utama (lavender terang) dipakai di semua tab.
-  static const bg         = Color(0xFFF7F5FF);
+  /// Latar layar utama (biru sangat terang) dipakai di semua tab.
+  static const bg         = Color(0xFFF2FAFC);
 
-  /// Latar gelap untuk layar onboarding.
-  static const onboardingBg    = Color(0xFF12132B);
-  static const onboardingTrack = Color(0xFF2A2C4D);
+  /// Latar gelap untuk layar onboarding, senada dengan wordmark logo.
+  static const onboardingBg    = Color(0xFF071A30);
+  static const onboardingTrack = Color(0xFF163654);
 }
 
 class AppSpacing {

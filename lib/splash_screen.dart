@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
 /// Splash screen. Animasi utama berasal dari `assets/lottie/splash.json`
 /// (Lottie) — ganti file itu untuk mengubah motion tanpa menyentuh kode ini.
+/// Transisi fade ke halaman Welcome didefinisikan di route '/welcome' pada
+/// [appRouter], bukan di sini.
 class SplashScreen extends StatefulWidget {
-  final Widget nextScreen;
-  const SplashScreen({super.key, required this.nextScreen});
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -61,15 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
   void _goNext() {
     if (_navigated || !mounted) return;
     _navigated = true;
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, _, _) => widget.nextScreen,
-        transitionsBuilder: (_, animation, _, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
+    context.go('/welcome');
   }
 
   @override
@@ -81,13 +75,13 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF14206B),
+      backgroundColor: const Color(0xFF071A30),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF14206B), Color(0xFF2C3A9E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF071A30), Color(0xFF0A87E0), Color(0xFF14D6B4)],
           ),
         ),
         child: SafeArea(
@@ -105,7 +99,10 @@ class _SplashScreenState extends State<SplashScreen>
                           'assets/lottie/splash.json',
                           fit: BoxFit.contain,
                           repeat: true,
-                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          errorBuilder: (_, _, _) => Image.asset(
+                            'assets/images/flovig_logo.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),

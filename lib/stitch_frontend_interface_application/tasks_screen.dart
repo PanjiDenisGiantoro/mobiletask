@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'add_task_form_sheet.dart';
 import 'app_theme.dart';
+import 'task_repository.dart';
+import 'widgets/skeleton_list.dart';
 import 'widgets/task_tile.dart';
 
 class TasksScreen extends StatefulWidget {
@@ -16,33 +21,33 @@ class _TasksScreenState extends State<TasksScreen>
 
   final List<String> _filters = ['All', 'High', 'Medium', 'Low'];
 
-  final List<Map<String, dynamic>> _tasks = [
-    {'title': 'Finalize wireframes for onboarding', 'project': 'Mobile App Redesign', 'priority': TaskPriority.high, 'due': 'Today', 'done': false},
-    {'title': 'Fix login screen crash on Android', 'project': 'Mobile App Redesign', 'priority': TaskPriority.high, 'due': 'Today', 'done': false},
-    {'title': 'Review API documentation', 'project': 'Backend API v2', 'priority': TaskPriority.medium, 'due': 'Today', 'done': true},
-    {'title': 'Setup CI/CD pipeline', 'project': 'Backend API v2', 'priority': TaskPriority.medium, 'due': 'May 14', 'done': false},
-    {'title': 'Send weekly report to stakeholders', 'project': 'Marketing Campaign Q2', 'priority': TaskPriority.low, 'due': 'Today', 'done': false},
-    {'title': 'Design token documentation', 'project': 'Mobile App Redesign', 'priority': TaskPriority.low, 'due': 'May 15', 'done': false},
-    {'title': 'Database schema migration', 'project': 'Backend API v2', 'priority': TaskPriority.high, 'due': 'May 14', 'done': false},
-    {'title': 'Write unit tests for auth module', 'project': 'Backend API v2', 'priority': TaskPriority.medium, 'due': 'May 16', 'done': true},
-  ];
+  List<TaskEntry> get _tasks => TaskRepository.instance.tasks;
 
-  List<Map<String, dynamic>> get _filtered {
+  List<TaskEntry> get _filtered {
     if (_selectedFilter == 'All') return _tasks;
     final map = {'High': TaskPriority.high, 'Medium': TaskPriority.medium, 'Low': TaskPriority.low};
-    return _tasks.where((t) => t['priority'] == map[_selectedFilter]).toList();
+    return _tasks.where((t) => t.priority == map[_selectedFilter]).toList();
   }
 
-  int get _doneCount => _tasks.where((t) => t['done'] == true).length;
+  int get _doneCount => _tasks.where((t) => t.done).length;
+
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    TaskRepository.instance.addListener(_onTasksChanged);
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _loading = false);
+    });
   }
+
+  void _onTasksChanged() => setState(() {});
 
   @override
   void dispose() {
+    TaskRepository.instance.removeListener(_onTasksChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -79,13 +84,15 @@ class _TasksScreenState extends State<TasksScreen>
           _buildProgressBanner(),
           _buildFilterChips(),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTaskList(false),
-                _buildTaskList(true),
-              ],
-            ),
+            child: _loading
+                ? const SkeletonList()
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTaskList(false),
+                      _buildTaskList(true),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -93,7 +100,7 @@ class _TasksScreenState extends State<TasksScreen>
         padding: const EdgeInsets.only(bottom: 70),
         child: FloatingActionButton(
           heroTag: 'tasks_fab',
-          onPressed: () {},
+          onPressed: () => showAddTaskFormSheet(context),
           backgroundColor: AppColors.heroStart,
           child: const Icon(Icons.add, color: Colors.white),
         ),
@@ -185,7 +192,7 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   Widget _buildTaskList(bool showDone) {
-    final list = _filtered.where((t) => t['done'] == showDone).toList();
+    final list = _filtered.where((t) => t.done == showDone).toList();
 
     if (list.isEmpty) {
       return Center(
@@ -218,16 +225,34 @@ class _TasksScreenState extends State<TasksScreen>
       separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (_, i) {
         final task = list[i];
-        final globalIndex = _tasks.indexOf(task);
-        return TaskTile(
-          title: task['title'],
-          project: task['project'],
-          priority: task['priority'],
-          dueDate: task['due'],
-          isDone: task['done'],
-          onChanged: (val) =>
-              setState(() => _tasks[globalIndex]['done'] = val ?? false),
-        );
+        return Slidable(
+          key: ValueKey(task),
+          endActionPane: ActionPane(
+            motion: const DrawerMotion(),
+            extentRatio: 0.25,
+            children: [
+              SlidableAction(
+                onPressed: (_) => TaskRepository.instance.deleteTask(task),
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                icon: Icons.delete_outline_rounded,
+                label: 'Hapus',
+                borderRadius: BorderRadius.circular(AppRadius.medium),
+              ),
+            ],
+          ),
+          child: TaskTile(
+            title: task.title,
+            project: task.project,
+            priority: task.priority,
+            dueDate: task.due,
+            isDone: task.done,
+            type: task.type,
+            photo: task.photo,
+            onChanged: (val) =>
+                TaskRepository.instance.setDone(task, val ?? false),
+          ),
+        ).animate().fadeIn(delay: Duration(milliseconds: 40 * i), duration: 250.ms).slideY(begin: 0.08, end: 0);
       },
     );
   }

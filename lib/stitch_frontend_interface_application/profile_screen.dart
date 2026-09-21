@@ -1,7 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
 import 'app_mode.dart';
-import 'welcome_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final AppMode currentMode;
@@ -28,6 +29,8 @@ class ProfileScreen extends StatelessWidget {
                 _buildModeSwitch(),
                 const SizedBox(height: AppSpacing.lg),
                 _buildSection('Account', _accountItems()),
+                const SizedBox(height: AppSpacing.md),
+                _buildSection('Admin', _adminItems(context)),
                 const SizedBox(height: AppSpacing.md),
                 _buildSection('Preferences', _preferenceItems()),
                 const SizedBox(height: AppSpacing.md),
@@ -138,14 +141,14 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      'PG',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  child: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: 'https://i.pravatar.cc/150?u=panjiai1996',
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => const _AvatarInitials(),
+                      errorWidget: (_, _, _) => const _AvatarInitials(),
                     ),
                   ),
                 ),
@@ -392,7 +395,7 @@ class ProfileScreen extends StatelessWidget {
                 return Column(
                   children: [
                     InkWell(
-                      onTap: () {},
+                      onTap: item.onTap ?? () {},
                       borderRadius: BorderRadius.vertical(
                         top: i == 0
                             ? const Radius.circular(AppRadius.large)
@@ -485,6 +488,15 @@ class ProfileScreen extends StatelessWidget {
     ),
   ];
 
+  List<_MenuItem> _adminItems(BuildContext context) => [
+    _MenuItem(
+      icon: Icons.admin_panel_settings_rounded,
+      label: 'Admin & Pengaturan',
+      color: AppColors.primary600,
+      onTap: () => context.push('/admin-settings'),
+    ),
+  ];
+
   List<_MenuItem> _preferenceItems() => [
     _MenuItem(
       icon: Icons.dark_mode_outlined,
@@ -529,12 +541,7 @@ class ProfileScreen extends StatelessWidget {
     ),
   ];
 
-  void _logout(BuildContext context) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
-  }
+  void _logout(BuildContext context) => context.go('/welcome');
 
   Widget _buildLogoutButton(BuildContext context) {
     return Padding(
@@ -577,11 +584,33 @@ class _MenuItem {
   final String label;
   final Color color;
   final Widget? trailing;
+  final VoidCallback? onTap;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.color,
     this.trailing,
+    this.onTap,
   });
+}
+
+/// Fallback avatar (inisial nama) selagi foto profil dari jaringan dimuat
+/// atau gagal diambil.
+class _AvatarInitials extends StatelessWidget {
+  const _AvatarInitials();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'PG',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }

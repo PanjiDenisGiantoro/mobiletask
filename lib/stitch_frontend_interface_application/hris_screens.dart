@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
-import 'welcome_screen.dart';
+import 'shift_repository.dart';
+import 'widgets/skeleton_list.dart';
 import 'widgets/stat_card.dart';
 
 // ── Dashboard body untuk mode HRIS (tab index 0) ────────────────────────────
@@ -41,12 +43,7 @@ class HrisDashboardBody extends StatelessWidget {
     {'title': 'Reza Pratama absen keluar pukul 17:05', 'time': '2 jam lalu'},
   ];
 
-  void _logout(BuildContext context) {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
-  }
+  void _logout(BuildContext context) => context.go('/welcome');
 
   @override
   Widget build(BuildContext context) {
@@ -252,8 +249,32 @@ class HrisDashboardBody extends StatelessWidget {
 
 // ── Absensi (tab index 1 pada mode HRIS) ────────────────────────────────────
 
-class AttendanceScreen extends StatelessWidget {
+class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
+
+  @override
+  State<AttendanceScreen> createState() => _AttendanceScreenState();
+}
+
+class _AttendanceScreenState extends State<AttendanceScreen> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _loading = false);
+    });
+    ShiftRepository.instance.addListener(_onShiftsChanged);
+  }
+
+  void _onShiftsChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    ShiftRepository.instance.removeListener(_onShiftsChanged);
+    super.dispose();
+  }
 
   static const _records = [
     {
@@ -364,82 +385,110 @@ class AttendanceScreen extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              itemCount: _records.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (_, i) {
-                final r = _records[i];
-                final status = r['status']!;
-                return Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm + 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.medium),
-                    boxShadow: AppShadows.card,
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.heroStart.withValues(
-                          alpha: 0.12,
+            child: _loading
+                ? const SkeletonList()
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    itemCount: _records.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (_, i) {
+                      final r = _records[i];
+                      final status = r['status']!;
+                      final shift = ShiftRepository.instance.shiftFor(r['name']!);
+                      return Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm + 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(AppRadius.medium),
+                          boxShadow: AppShadows.card,
                         ),
-                        child: Text(
-                          r['name']!.substring(0, 1),
-                          style: const TextStyle(
-                            color: AppColors.heroStart,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              r['name']!,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.grey900,
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: AppColors.heroStart.withValues(
+                                alpha: 0.12,
+                              ),
+                              child: Text(
+                                r['name']!.substring(0, 1),
+                                style: const TextStyle(
+                                  color: AppColors.heroStart,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Masuk ${r['checkIn']}  ·  Keluar ${r['checkOut']}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.grey500,
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    r['name']!,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.grey900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Masuk ${r['checkIn']}  ·  Keluar ${r['checkOut']}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.grey500,
+                                    ),
+                                  ),
+                                  if (shift != null) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: shift.color.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(AppRadius.full),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.schedule, size: 11, color: shift.color),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            '${shift.name} · ${shift.range}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                              color: shift.color,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _statusBg(status),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
+                              ),
+                              child: Text(
+                                status,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _statusColor(status),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _statusBg(status),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                        child: Text(
-                          status,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: _statusColor(status),
-                          ),
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -449,8 +498,23 @@ class AttendanceScreen extends StatelessWidget {
 
 // ── Cuti & Izin (tab index 2 pada mode HRIS) ────────────────────────────────
 
-class LeaveScreen extends StatelessWidget {
+class LeaveScreen extends StatefulWidget {
   const LeaveScreen({super.key});
+
+  @override
+  State<LeaveScreen> createState() => _LeaveScreenState();
+}
+
+class _LeaveScreenState extends State<LeaveScreen> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _loading = false);
+    });
+  }
 
   static const _requests = [
     {
@@ -514,7 +578,9 @@ class LeaveScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.separated(
+      body: _loading
+          ? const SkeletonList()
+          : ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.md),
         itemCount: _requests.length,
         separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
