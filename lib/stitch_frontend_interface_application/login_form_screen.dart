@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
+import 'auth_repository.dart';
 import 'otp_verification_sheet.dart';
 import 'widgets/hero_banner_carousel.dart';
 
@@ -20,6 +22,7 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -28,19 +31,20 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() != true) return;
+  Future<void> _submit() async {
+    if (_loading || _formKey.currentState?.validate() != true) return;
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    if (email != 'admin' || password != 'admin') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email atau password salah')),
-      );
-      return;
+    setState(() => _loading = true);
+    try {
+      await AuthRepository.instance.login(_emailController.text.trim(), _passwordController.text);
+      if (!mounted) return;
+      context.go('/home');
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-
-    context.go('/home');
   }
 
   @override
@@ -69,6 +73,7 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                       decoration: _inputDecoration(hint: 'Email', icon: Icons.mail_outline),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Email wajib diisi';
+                        if (!v.contains('@')) return 'Format email tidak valid';
                         return null;
                       },
                     ),
@@ -106,19 +111,26 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: _submit,
+                        onPressed: _loading ? null : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary600,
+                          disabledBackgroundColor: AppColors.primary600.withValues(alpha: 0.7),
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
                         ),
-                        child: const Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                        child: _loading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                              )
+                            : const Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     _buildDividerWithText('Atau masuk dengan'),
                     const SizedBox(height: AppSpacing.md),
-                    _buildSocialRow(),
+                    _buildGoogleButton(),
                     const SizedBox(height: AppSpacing.lg),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -173,33 +185,21 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
     );
   }
 
-  Widget _buildSocialRow() {
-    final items = [
-      (Icons.facebook, const Color(0xFF1877F2)),
-      (Icons.g_mobiledata_rounded, const Color(0xFFEA4335)),
-      (Icons.alternate_email_rounded, AppColors.primary600),
-      (Icons.apple, AppColors.grey900),
-    ];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: items.map((item) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: InkWell(
-            onTap: () {},
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.grey100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(item.$1, color: item.$2, size: 24),
-            ),
-          ),
-        );
-      }).toList(),
+  Widget _buildGoogleButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: () {},
+        icon: SvgPicture.asset('assets/icons/google.svg', width: 20, height: 20),
+        label: const Text('Masuk dengan Google',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.grey900)),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.grey100,
+          side: BorderSide.none,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+        ),
+      ),
     );
   }
 

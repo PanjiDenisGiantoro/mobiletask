@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
 import 'app_mode.dart';
+import 'auth_repository.dart';
+import 'sign_out.dart';
+import 'task_repository.dart';
+import '../projecthub/ph_store.dart';
 
 class ProfileScreen extends StatelessWidget {
   final AppMode currentMode;
@@ -173,9 +177,9 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Panji Giantoro',
-              style: TextStyle(
+            Text(
+              AuthRepository.instance.currentUser?.name ?? '-',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppColors.grey900,
@@ -191,9 +195,9 @@ class ProfileScreen extends StatelessWidget {
                 color: AppColors.heroStart.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppRadius.full),
               ),
-              child: const Text(
-                'Product Manager',
-                style: TextStyle(
+              child: Text(
+                (AuthRepository.instance.currentUser?.roles ?? const []).map((r) => r[0].toUpperCase() + r.substring(1)).join(', '),
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.heroStart,
@@ -205,14 +209,14 @@ class ProfileScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.location_on_outlined,
+                  Icons.mail_outline,
                   size: 13,
                   color: AppColors.grey400,
                 ),
                 const SizedBox(width: 2),
-                const Text(
-                  'Jakarta, Indonesia',
-                  style: TextStyle(fontSize: 11, color: AppColors.grey400),
+                Text(
+                  AuthRepository.instance.currentUser?.email ?? '',
+                  style: const TextStyle(fontSize: 11, color: AppColors.grey400),
                 ),
               ],
             ),
@@ -221,11 +225,11 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm + 2),
             Row(
               children: [
-                _buildStatItem('12', 'Projects'),
+                _buildStatItem('${PhStore.instance.projects.length}', 'Projects'),
                 _buildStatDivider(),
-                _buildStatItem('48', 'Tasks'),
+                _buildStatItem('${TaskRepository.instance.tasks.where((t) => t.assignedTo == PhStore.meId).length}', 'Tasks'),
                 _buildStatDivider(),
-                _buildStatItem('5', 'Teams'),
+                _buildStatItem('${PhStore.instance.projects.where((p) => p.members.any((m) => m.userId == PhStore.meId)).length}', 'Teams'),
               ],
             ),
           ],
@@ -541,15 +545,13 @@ class ProfileScreen extends StatelessWidget {
     ),
   ];
 
-  void _logout(BuildContext context) => context.go('/welcome');
-
   Widget _buildLogoutButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: SizedBox(
         width: double.infinity,
         child: InkWell(
-          onTap: () => _logout(context),
+          onTap: () => confirmSignOut(context),
           borderRadius: BorderRadius.circular(AppRadius.large),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),

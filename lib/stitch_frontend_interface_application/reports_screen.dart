@@ -142,7 +142,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           ),
                         ),
                         barGroups: [
-                          _barGroup(0, byPriority[TaskPriority.high]!, AppColors.error),
+                          _barGroup(0, byPriority[TaskPriority.high]! + byPriority[TaskPriority.urgent]!, AppColors.error),
                           _barGroup(1, byPriority[TaskPriority.medium]!, AppColors.warning),
                           _barGroup(2, byPriority[TaskPriority.low]!, AppColors.success),
                         ],

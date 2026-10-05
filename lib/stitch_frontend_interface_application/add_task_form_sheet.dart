@@ -1,8 +1,10 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../projecthub/ph_models.dart';
+import '../projecthub/ph_remote.dart';
+import '../projecthub/ph_store.dart';
 import 'app_theme.dart';
-import 'task_repository.dart';
 import 'widgets/activity_type.dart';
 
 /// Bottom sheet "Tugas Baru" yang dibuka langsung dari tombol + di tengah
@@ -29,6 +31,8 @@ class _AddTaskFormSheetState extends State<AddTaskFormSheet> {
   ActivityType _type = ActivityType.task;
   Uint8List? _photo;
   bool _saving = false;
+  Project? _project = PhStore.instance.projects.where((p) => p.status == 'active').firstOrNull ??
+      PhStore.instance.projects.firstOrNull;
 
   @override
   void dispose() {
@@ -86,18 +90,33 @@ class _AddTaskFormSheetState extends State<AddTaskFormSheet> {
 
   Future<void> _submit() async {
     final title = _titleController.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Isi dulu tugas yang ingin dikerjakan')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('Isi dulu tugas yang ingin dikerjakan')));
+      return;
+    }
+    final project = _project;
+    if (project == null) {
+      messenger.showSnackBar(const SnackBar(content: Text('Pilih proyek untuk tugas ini')));
       return;
     }
     setState(() => _saving = true);
-    TaskRepository.instance.addTask(title: title, type: _type, photo: _photo);
+    try {
+      await PhStore.instance.createTask(project, {
+        'title': title,
+        'description': 'Tipe aktivitas: ${_type.label}',
+        'priority': 'medium',
+        'status': 'todo',
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tugas "$title" berhasil ditambahkan')),
-    );
+    messenger.showSnackBar(SnackBar(content: Text('Tugas "$title" berhasil ditambahkan')));
   }
 
   @override
@@ -152,6 +171,30 @@ class _AddTaskFormSheetState extends State<AddTaskFormSheet> {
                         minLines: 2,
                         decoration: InputDecoration(
                           hintText: 'Contoh: Perbaiki bug login di Android',
+                          filled: true,
+                          fillColor: AppColors.grey100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.medium),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      const Text(
+                        'Proyek',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.grey700),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      DropdownButtonFormField<Project>(
+                        initialValue: _project,
+                        isExpanded: true,
+                        hint: const Text('Belum ada proyek'),
+                        items: [
+                          for (final p in PhStore.instance.projects)
+                            DropdownMenuItem(value: p, child: Text(p.name, overflow: TextOverflow.ellipsis)),
+                        ],
+                        onChanged: (p) => setState(() => _project = p),
+                        decoration: InputDecoration(
                           filled: true,
                           fillColor: AppColors.grey100,
                           border: OutlineInputBorder(
@@ -270,8 +313,8 @@ class _AddTaskFormSheetState extends State<AddTaskFormSheet> {
                               borderRadius: BorderRadius.circular(AppRadius.medium),
                             ),
                           ),
-                          child: const Text(
-                            'Simpan Tugas',
+                          child: Text(
+                            _saving ? 'Menyimpan...' : 'Simpan Tugas',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
                           ),
                         ),

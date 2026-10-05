@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../projecthub/ph_api.dart';
+import '../projecthub/ph_format.dart';
+import '../projecthub/ph_store.dart';
 import 'app_theme.dart';
 
-/// Halaman "Kalender" — jadwal & pengingat tim, dirender dengan
-/// table_calendar. Data event di sini masih contoh statis relatif terhadap
-/// hari ini (belum tersambung ke tanggal jatuh tempo tugas asli).
+/// Satu agenda dari `/calendar/events` (task, milestone, sprint, tiket).
+class _CalEvent {
+  final String id;
+  final String title;
+  final String type;
+  final String project;
+  final String status;
+  final Color color;
+  const _CalEvent(this.id, this.title, this.type, this.project, this.status, this.color);
+}
+
+/// Halaman "Kalender" — tenggat task, milestone, sprint, dan SLA tiket dari
+/// endpoint kalender web (CalendarWebController), per bulan yang ditampilkan.
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -17,7 +31,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late DateTime _focusedDay;
   DateTime? _selectedDay;
   CalendarFormat _format = CalendarFormat.month;
-  late final Map<DateTime, List<String>> _events;
+  final Map<DateTime, List<_CalEvent>> _events = {};
+  final Set<String> _loadedMonths = {};
+  bool _loading = false;
+  String? _error;
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -27,15 +44,57 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _today = _dateOnly(DateTime.now());
     _focusedDay = _today;
     _selectedDay = _today;
-    _events = {
-      _today: const ['Standup harian', 'Review desain onboarding'],
-      _dateOnly(_today.add(const Duration(days: 1))): const ['Deadline Sprint 12'],
-      _dateOnly(_today.add(const Duration(days: 3))): const ['Rapat mingguan tim'],
-      _dateOnly(_today.add(const Duration(days: 7))): const ['Demo ke stakeholder'],
-    };
+    _loadMonth(_today);
   }
 
-  List<String> _eventsFor(DateTime day) => _events[_dateOnly(day)] ?? const [];
+  Future<void> _loadMonth(DateTime month, {bool force = false}) async {
+    final key = '${month.year}-${month.month}';
+    if (!force && _loadedMonths.contains(key)) return;
+    _loadedMonths.add(key);
+    setState(() => _loading = true);
+    try {
+      final start = isoDate(DateTime(month.year, month.month, 1));
+      final end = isoDate(DateTime(month.year, month.month + 1, 0));
+      final list = await PhApi.instance.get('/calendar/events?start=$start&end=$end') as List;
+      _events.removeWhere((d, _) => d.year == month.year && d.month == month.month);
+      for (final e in list) {
+        final day = DateTime.tryParse('${e['start']}');
+        if (day == null) continue;
+        final props = e['extendedProps'] as Map? ?? const {};
+        final hex = int.tryParse('${e['color'] ?? ''}'.replaceFirst('#', ''), radix: 16);
+        _events.putIfAbsent(_dateOnly(day), () => []).add(_CalEvent(
+              '${e['id']}',
+              '${e['title']}',
+              '${props['type'] ?? ''}',
+              '${props['project'] ?? ''}',
+              '${props['status'] ?? ''}',
+              hex == null ? AppColors.heroStart : Color(0xFF000000 | hex),
+            ));
+      }
+      _error = null;
+    } on ApiException catch (e) {
+      _loadedMonths.remove(key);
+      _error = e.message;
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  List<_CalEvent> _eventsFor(DateTime day) => _events[_dateOnly(day)] ?? const [];
+
+  static const _typeLabels = {'task': 'Task', 'milestone': 'Milestone', 'sprint': 'Sprint', 'ticket': 'Tiket'};
+
+  void _open(_CalEvent e) {
+    final id = e.id.substring(e.id.indexOf('-') + 1);
+    switch (e.type) {
+      case 'task':
+        context.push('/task/$id');
+      case 'ticket':
+        context.push('/ticket/$id');
+      default:
+        final p = PhStore.instance.projectByName(e.project);
+        if (p != null) context.push('/project/${p.id}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +113,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ),
         title: const Text('Kalender'),
+        actions: [
+          IconButton(tooltip: 'Muat ulang', icon: const Icon(Icons.refresh), onPressed: () => _loadMonth(_focusedDay, force: true)),
+        ],
       ),
       body: Column(
         children: [
           Container(
             color: AppColors.white,
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: TableCalendar<String>(
+            child: TableCalendar<_CalEvent>(
               firstDay: DateTime(_today.year - 1),
               lastDay: DateTime(_today.year + 1),
               focusedDay: _focusedDay,
@@ -74,7 +136,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   _focusedDay = focused;
                 });
               },
-              onPageChanged: (focused) => _focusedDay = focused,
+              onPageChanged: (focused) {
+                _focusedDay = focused;
+                _loadMonth(focused);
+              },
               headerStyle: const HeaderStyle(
                 formatButtonVisible: true,
                 titleCentered: true,
@@ -87,17 +152,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
           ),
+          if (_loading) const LinearProgressIndicator(minHeight: 2),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: selectedEvents.isEmpty
-                ? const Center(
-                    child: Text('Tidak ada agenda di tanggal ini', style: TextStyle(color: AppColors.grey400)),
+                ? Center(
+                    child: Text(_error ?? 'Tidak ada agenda di tanggal ini', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.grey400)),
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: selectedEvents.length,
                     separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (_, i) => Container(
+                    itemBuilder: (_, i) => InkWell(
+                      onTap: () => _open(selectedEvents[i]),
+                      child: Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.white,
@@ -108,16 +176,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.event_rounded, color: AppColors.heroStart, size: 20),
+                          Icon(Icons.event_rounded, color: selectedEvents[i].color, size: 20),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
-                            child: Text(
-                              selectedEvents[i],
-                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.grey900),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  selectedEvents[i].title,
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.grey900),
+                                ),
+                                Text(
+                                  [_typeLabels[selectedEvents[i].type] ?? selectedEvents[i].type, selectedEvents[i].project, selectedEvents[i].status].where((x) => x.isNotEmpty).join(' · '),
+                                  style: const TextStyle(fontSize: 12, color: AppColors.grey500),
+                                ),
+                              ],
                             ),
                           ),
+                          const Icon(Icons.chevron_right, color: AppColors.grey400),
                         ],
                       ),
+                    ),
                     ),
                   ),
           ),

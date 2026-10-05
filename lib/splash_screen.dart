@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'stitch_frontend_interface_application/auth_repository.dart';
 
 /// Splash screen. Animasi utama berasal dari `assets/lottie/splash.json`
 /// (Lottie) — ganti file itu untuk mengubah motion tanpa menyentuh kode ini.
 /// Transisi fade ke halaman Welcome didefinisikan di route '/welcome' pada
-/// [appRouter], bukan di sini.
+/// [appRouter], bukan di sini. Kalau ada sesi login tersimpan, langsung ke
+/// '/home'.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -21,6 +23,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final Animation<double> _taglineOpacity;
 
   bool _navigated = false;
+  final Future<bool> _session = AuthRepository.instance.restoreSession();
 
   @override
   void initState() {
@@ -60,10 +63,12 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(milliseconds: 3200), _goNext);
   }
 
-  void _goNext() {
+  Future<void> _goNext() async {
     if (_navigated || !mounted) return;
     _navigated = true;
-    context.go('/welcome');
+    final loggedIn = await _session;
+    if (!mounted) return;
+    context.go(loggedIn ? '/home' : '/welcome');
   }
 
   @override

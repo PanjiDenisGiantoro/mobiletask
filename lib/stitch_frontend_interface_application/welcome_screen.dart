@@ -27,22 +27,22 @@ class WelcomeScreen extends StatelessWidget {
 
   static const _menus = [
     _WelcomeMenu(
-      asset: 'assets/icons/project.svg',
+      asset: 'assets/icons/illustrations/project_management.svg',
       title: 'Proyek',
       accent: AppColors.info,
     ),
     _WelcomeMenu(
-      asset: 'assets/icons/task.svg',
+      asset: 'assets/icons/illustrations/task.svg',
       title: 'Tugas',
       accent: AppColors.warning,
     ),
     _WelcomeMenu(
-      asset: 'assets/icons/team.svg',
+      asset: 'assets/icons/illustrations/human_source.svg',
       title: 'Tim',
       accent: AppColors.heroStart,
     ),
     _WelcomeMenu(
-      asset: 'assets/icons/laporan.svg',
+      asset: 'assets/icons/illustrations/pie_chart.svg',
       title: 'Laporan',
       accent: AppColors.accent400,
     ),

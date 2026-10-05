@@ -1,52 +1,115 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
-import 'shift_repository.dart';
-import 'widgets/skeleton_list.dart';
+import 'auth_repository.dart';
+import 'sign_out.dart';
+import '../projecthub/attendance_repository.dart';
+import '../projecthub/hris_remote.dart';
+import '../projecthub/ph_format.dart';
+import '../projecthub/ph_store.dart';
+import '../projecthub/widgets/ph_widgets.dart';
 import 'widgets/stat_card.dart';
 
 // ── Dashboard body untuk mode HRIS (tab index 0) ────────────────────────────
 
-class HrisDashboardBody extends StatelessWidget {
+class HrisDashboardBody extends StatefulWidget {
   const HrisDashboardBody({super.key});
+
+  @override
+  State<HrisDashboardBody> createState() => _HrisDashboardBodyState();
+}
+
+class _HrisDashboardBodyState extends State<HrisDashboardBody> {
+  @override
+  void initState() {
+    super.initState();
+    final store = PhStore.instance;
+    if (!store.hrisSynced) store.syncHris();
+    AttendanceRepository.instance.loadTeam(isoDate(DateTime.now()));
+  }
 
   static const _quickActions = [
     {
-      'icon': Icons.fingerprint,
+      'icon': 'assets/icons/illustrations/to_do.svg',
       'label': 'Absen Masuk',
+      'route': '/attendance',
       'color': AppColors.heroStart,
       'bg': Color(0xFFEDE9FE),
     },
     {
-      'icon': Icons.event_busy_outlined,
+      'icon': 'assets/icons/illustrations/calendar.svg',
       'label': 'Ajukan Cuti',
+      'route': '/leave',
       'color': AppColors.warning,
       'bg': AppColors.warningBg,
     },
     {
-      'icon': Icons.receipt_long_outlined,
+      'icon': 'assets/icons/illustrations/revenue.svg',
       'label': 'Slip Gaji',
+      'route': '/payroll',
       'color': AppColors.success,
       'bg': AppColors.successBg,
     },
     {
-      'icon': Icons.badge_outlined,
+      'icon': 'assets/icons/illustrations/cv.svg',
       'label': 'Karyawan',
+      'route': '/employees',
       'color': AppColors.info,
       'bg': Color(0xFFE3F2FD),
     },
   ];
 
-  static const _activity = [
-    {'title': 'Budi Santoso mengajukan cuti tahunan', 'time': '10 menit lalu'},
-    {'title': 'Siti Rahma absen masuk pukul 08:02', 'time': '1 jam lalu'},
-    {'title': 'Reza Pratama absen keluar pukul 17:05', 'time': '2 jam lalu'},
+  static const _services = [
+    ('Absensi dan rekap', 'assets/icons/illustrations/to_do.svg', '/attendance'),
+    ('Cuti & Izin', 'assets/icons/illustrations/calendar.svg', '/leave'),
+    ('Lembur', 'assets/icons/illustrations/deadline.svg', '/overtime'),
+    ('Reimburse', 'assets/icons/illustrations/file_management.svg', '/reimburse'),
+    ('Kasbon', 'assets/icons/illustrations/notes.svg', '/kasbon'),
+    ('Penggajian', 'assets/icons/illustrations/revenue.svg', '/payroll'),
+    ('Data Karyawan', 'assets/icons/illustrations/cv.svg', '/employees'),
+    ('Jadwal Shift', 'assets/icons/illustrations/timeline.svg', '/shift-schedule'),
+    ('Hari Libur', 'assets/icons/illustrations/creativity.svg', '/holidays'),
+    ('Pendaftaran Wajah', 'assets/icons/illustrations/human_source.svg', '/faces'),
+    ('Konfigurasi Absensi', 'assets/icons/illustrations/gear.svg', '/attendance-settings'),
+    ('Shift Kerja', 'assets/icons/illustrations/processing.svg', '/shift-settings'),
   ];
+  /// Tiga pengajuan HRIS terbaru (cuti, lembur, reimburse) dari server.
+  List<(String, String)> _activity(PhStore store) {
+    final items = <(String, String, String)>[
+      for (final l in store.leaveRequests.take(5)) (l.startDate, '${store.nameOf(l.userId)} mengajukan ${store.leaveType(l.leaveTypeId).name}', statusLabel('submission', l.status)),
+      for (final o in store.overtimes.take(5)) (o.date, '${store.nameOf(o.userId)} mengajukan lembur ${o.totalHours} jam', statusLabel('submission', o.status)),
+      for (final r in store.reimbursements.take(5)) (r.expenseDate, '${store.nameOf(r.userId)} klaim ${r.title}', statusLabel('submission', r.status)),
+    ]..sort((x, y) => y.$1.compareTo(x.$1));
+    return [for (final i in items.take(3)) (i.$2, '${fmtDate(i.$1)} · ${i.$3}')];
+  }
 
-  void _logout(BuildContext context) => context.go('/welcome');
+  /// Pengajuan pending milik orang lain yang boleh diputuskan user ini.
+  int _pendingForMe(PhStore store) {
+    final me = PhStore.meId;
+    return (store.can('approve leave') ? store.leaveRequests.where((e) => e.status == 'pending' && e.userId != me).length : 0) +
+        (store.can('approve overtime') ? store.overtimes.where((e) => e.status == 'pending' && e.userId != me).length : 0) +
+        (store.can('approve reimbursement') ? store.reimbursements.where((e) => e.status == 'pending' && e.userId != me).length : 0);
+  }
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    return h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: Listenable.merge([PhStore.instance, AttendanceRepository.instance]),
+        builder: (context, _) => _build(context),
+      );
+
+  Widget _build(BuildContext context) {
+    final store = PhStore.instance;
+    final team = AttendanceRepository.instance.team;
+    final name = AuthRepository.instance.currentUser?.name ?? '';
+    final pending = _pendingForMe(store);
+    final activity = _activity(store);
+    String count(bool known, int n) => known ? '$n' : '-';
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -72,16 +135,16 @@ class HrisDashboardBody extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.white),
               tooltip: 'Log Out',
-              onPressed: () => _logout(context),
+              onPressed: () => confirmSignOut(context),
             ),
-            const Padding(
-              padding: EdgeInsets.only(right: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
               child: CircleAvatar(
                 radius: 16,
                 backgroundColor: AppColors.accent400,
                 child: Text(
-                  'P',
-                  style: TextStyle(
+                  name.isEmpty ? '?' : name[0].toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -97,9 +160,9 @@ class HrisDashboardBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Selamat pagi, Panji',
-                  style: TextStyle(
+                Text(
+                  '${_greeting()}${name.isEmpty ? '' : ', ${name.split(' ').first}'}',
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: AppColors.grey900,
@@ -110,6 +173,16 @@ class HrisDashboardBody extends StatelessWidget {
                   'Ringkasan kepegawaian hari ini',
                   style: TextStyle(fontSize: 14, color: AppColors.grey700),
                 ),
+                if (store.hrisError != null && !store.hrisSynced)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.md),
+                    child: PhListRow(
+                      leading: const Icon(Icons.lock_outline, color: AppColors.error),
+                      title: store.hrisError!,
+                      subtitle: 'Tarik untuk memuat ulang atau hubungi admin',
+                      onTap: store.syncHris,
+                    ),
+                  ),
                 const SizedBox(height: AppSpacing.lg),
                 GridView.count(
                   crossAxisCount: 2,
@@ -118,34 +191,46 @@ class HrisDashboardBody extends StatelessWidget {
                   mainAxisSpacing: AppSpacing.sm,
                   crossAxisSpacing: AppSpacing.sm,
                   childAspectRatio: 1.4,
-                  children: const [
+                  children: [
                     StatCard(
-                      value: '86',
+                      value: count(team != null || store.employees.isNotEmpty, team?.total ?? store.employees.length),
                       label: 'Total Karyawan',
                       icon: Icons.groups_outlined,
                       color: AppColors.heroStart,
                     ),
                     StatCard(
-                      value: '79',
+                      value: count(team != null, team?.present ?? 0),
                       label: 'Hadir Hari Ini',
                       icon: Icons.check_circle_outline,
                       color: AppColors.success,
                     ),
                     StatCard(
-                      value: '4',
+                      value: count(store.hrisSynced, store.leaveRequests.where((l) => l.status == 'pending').length),
                       label: 'Cuti Pending',
                       icon: Icons.event_busy_outlined,
                       color: AppColors.warning,
                     ),
                     StatCard(
-                      value: '3',
+                      value: count(team != null, team?.employees.where((e) => e.$2?.notes.contains('Telat') ?? false).length ?? 0),
                       label: 'Terlambat',
                       icon: Icons.schedule_outlined,
                       color: AppColors.error,
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                if (pending == 0)
+                  const SizedBox(height: AppSpacing.lg)
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
+                    child: PhListRow(
+                      leading: const Icon(Icons.fact_check_outlined, color: AppColors.warning),
+                      title: '$pending pengajuan menunggu persetujuan Anda',
+                      subtitle: 'Cuti, lembur, dan reimburse',
+                      trailing: const Icon(Icons.chevron_right, color: AppColors.grey400),
+                      onTap: () => context.push(store.leaveRequests.any((e) => e.status == 'pending' && e.userId != PhStore.meId) ? '/leave' : store.overtimes.any((e) => e.status == 'pending' && e.userId != PhStore.meId) ? '/overtime' : '/reimburse'),
+                    ),
+                  ),
                 const Text(
                   'Aksi Cepat',
                   style: TextStyle(
@@ -158,7 +243,10 @@ class HrisDashboardBody extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: _quickActions.map((a) {
-                    return Column(
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => context.push(a['route'] as String),
+                      child: Column(
                       children: [
                         Container(
                           width: 56,
@@ -169,11 +257,8 @@ class HrisDashboardBody extends StatelessWidget {
                               AppRadius.large,
                             ),
                           ),
-                          child: Icon(
-                            a['icon'] as IconData,
-                            color: a['color'] as Color,
-                            size: 24,
-                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: SvgPicture.asset(a['icon'] as String, fit: BoxFit.contain),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -186,8 +271,54 @@ class HrisDashboardBody extends StatelessWidget {
                           ),
                         ),
                       ],
+                      ),
                     );
                   }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const Text(
+                  'Layanan HRIS',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.grey900,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: AppSpacing.sm,
+                  crossAxisSpacing: AppSpacing.sm,
+                  childAspectRatio: 3.1,
+                  children: [
+                    for (final s in _services)
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => context.push(s.$3),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.medium),
+                            boxShadow: AppShadows.card,
+                          ),
+                          child: Row(
+                            children: [
+                              SvgPicture.asset(s.$2, width: 24, height: 24),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  s.$1,
+                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.grey900),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 const Text(
@@ -199,7 +330,9 @@ class HrisDashboardBody extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                ..._activity.map(
+                if (activity.isEmpty)
+                  const Text('Belum ada pengajuan.', style: TextStyle(fontSize: 13, color: AppColors.grey700)),
+                ...activity.map(
                   (a) => Container(
                     margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                     padding: const EdgeInsets.all(AppSpacing.sm + 4),
@@ -218,7 +351,7 @@ class HrisDashboardBody extends StatelessWidget {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            a['title']!,
+                            a.$1,
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.grey900,
@@ -227,7 +360,7 @@ class HrisDashboardBody extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          a['time']!,
+                          a.$2,
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.grey500,
@@ -243,405 +376,6 @@ class HrisDashboardBody extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Absensi (tab index 1 pada mode HRIS) ────────────────────────────────────
-
-class AttendanceScreen extends StatefulWidget {
-  const AttendanceScreen({super.key});
-
-  @override
-  State<AttendanceScreen> createState() => _AttendanceScreenState();
-}
-
-class _AttendanceScreenState extends State<AttendanceScreen> {
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) setState(() => _loading = false);
-    });
-    ShiftRepository.instance.addListener(_onShiftsChanged);
-  }
-
-  void _onShiftsChanged() => setState(() {});
-
-  @override
-  void dispose() {
-    ShiftRepository.instance.removeListener(_onShiftsChanged);
-    super.dispose();
-  }
-
-  static const _records = [
-    {
-      'name': 'Budi Santoso',
-      'checkIn': '08:00',
-      'checkOut': '17:02',
-      'status': 'Tepat Waktu',
-    },
-    {
-      'name': 'Siti Rahma',
-      'checkIn': '08:02',
-      'checkOut': '17:00',
-      'status': 'Tepat Waktu',
-    },
-    {
-      'name': 'Reza Pratama',
-      'checkIn': '08:41',
-      'checkOut': '17:15',
-      'status': 'Terlambat',
-    },
-    {
-      'name': 'Dika Ramadhan',
-      'checkIn': '07:55',
-      'checkOut': '-',
-      'status': 'Belum Pulang',
-    },
-    {
-      'name': 'Hendra Wijaya',
-      'checkIn': '-',
-      'checkOut': '-',
-      'status': 'Tidak Hadir',
-    },
-  ];
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'Tepat Waktu':
-        return AppColors.success;
-      case 'Terlambat':
-        return AppColors.error;
-      case 'Belum Pulang':
-        return AppColors.info;
-      default:
-        return AppColors.grey500;
-    }
-  }
-
-  Color _statusBg(String status) {
-    switch (status) {
-      case 'Tepat Waktu':
-        return AppColors.successBg;
-      case 'Terlambat':
-        return AppColors.errorBg;
-      case 'Belum Pulang':
-        return const Color(0xFFE3F2FD);
-      default:
-        return AppColors.grey100;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.heroStart,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.heroStart, AppColors.heroMid],
-            ),
-          ),
-        ),
-        title: const Text('Absensi'),
-      ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(AppSpacing.md),
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(AppRadius.large),
-              boxShadow: AppShadows.card,
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.groups_outlined,
-                  color: AppColors.heroStart,
-                  size: 28,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                const Expanded(
-                  child: Text(
-                    '79 dari 86 karyawan hadir hari ini',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.grey900,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _loading
-                ? const SkeletonList()
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                    itemCount: _records.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (_, i) {
-                      final r = _records[i];
-                      final status = r['status']!;
-                      final shift = ShiftRepository.instance.shiftFor(r['name']!);
-                      return Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm + 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(AppRadius.medium),
-                          boxShadow: AppShadows.card,
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: AppColors.heroStart.withValues(
-                                alpha: 0.12,
-                              ),
-                              child: Text(
-                                r['name']!.substring(0, 1),
-                                style: const TextStyle(
-                                  color: AppColors.heroStart,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    r['name']!,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.grey900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Masuk ${r['checkIn']}  ·  Keluar ${r['checkOut']}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.grey500,
-                                    ),
-                                  ),
-                                  if (shift != null) ...[
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: shift.color.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(AppRadius.full),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.schedule, size: 11, color: shift.color),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            '${shift.name} · ${shift.range}',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: shift.color,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _statusBg(status),
-                                borderRadius: BorderRadius.circular(AppRadius.full),
-                              ),
-                              child: Text(
-                                status,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: _statusColor(status),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Cuti & Izin (tab index 2 pada mode HRIS) ────────────────────────────────
-
-class LeaveScreen extends StatefulWidget {
-  const LeaveScreen({super.key});
-
-  @override
-  State<LeaveScreen> createState() => _LeaveScreenState();
-}
-
-class _LeaveScreenState extends State<LeaveScreen> {
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) setState(() => _loading = false);
-    });
-  }
-
-  static const _requests = [
-    {
-      'name': 'Budi Santoso',
-      'type': 'Cuti Tahunan',
-      'range': '10 - 12 Jul 2026',
-      'status': 'Menunggu',
-    },
-    {
-      'name': 'Siti Rahma',
-      'type': 'Sakit',
-      'range': '3 Jul 2026',
-      'status': 'Disetujui',
-    },
-    {
-      'name': 'Dika Ramadhan',
-      'type': 'Izin',
-      'range': '5 Jul 2026',
-      'status': 'Disetujui',
-    },
-    {
-      'name': 'Hendra Wijaya',
-      'type': 'Cuti Tahunan',
-      'range': '1 - 2 Jul 2026',
-      'status': 'Ditolak',
-    },
-  ];
-
-  Color _statusColor(String status) => switch (status) {
-    'Disetujui' => AppColors.success,
-    'Ditolak' => AppColors.error,
-    _ => AppColors.warning,
-  };
-
-  Color _statusBg(String status) => switch (status) {
-    'Disetujui' => AppColors.successBg,
-    'Ditolak' => AppColors.errorBg,
-    _ => AppColors.warningBg,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.heroStart,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.heroStart, AppColors.heroMid],
-            ),
-          ),
-        ),
-        title: const Text('Cuti & Izin'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: _loading
-          ? const SkeletonList()
-          : ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: _requests.length,
-        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-        itemBuilder: (_, i) {
-          final r = _requests[i];
-          final status = r['status']!;
-          return Container(
-            padding: const EdgeInsets.all(AppSpacing.sm + 4),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(AppRadius.medium),
-              boxShadow: AppShadows.card,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        r['name']!,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.grey900,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${r['type']} · ${r['range']}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.grey500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _statusBg(status),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: _statusColor(status),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
     );
   }
 }

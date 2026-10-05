@@ -43,7 +43,7 @@ class AdminSettingsScreen extends StatelessWidget {
           ]),
           const SizedBox(height: AppSpacing.md),
           _buildGroup(context, 'Members', [
-            _AdminItem(icon: Icons.badge_rounded, label: 'Employee', accent: AppColors.info),
+            _AdminItem(icon: Icons.badge_rounded, label: 'Employee', accent: AppColors.info, route: '/employees'),
             _AdminItem(icon: Icons.handshake_rounded, label: 'Clients', accent: AppColors.info),
           ]),
           const SizedBox(height: AppSpacing.md),

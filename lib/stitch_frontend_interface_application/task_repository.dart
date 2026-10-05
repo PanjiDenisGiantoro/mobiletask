@@ -1,71 +1,102 @@
 import 'package:flutter/foundation.dart';
+import '../projecthub/ph_models.dart';
 import 'widgets/activity_type.dart';
 import 'widgets/task_tile.dart';
 
 class TaskEntry {
-  final String title;
+  final int id;
+
+  /// projects.id di server; 0 untuk task lokal tanpa proyek.
+  final int projectId;
+  String title;
   final String project;
-  final TaskPriority priority;
-  final String due;
+  TaskPriority priority;
+  String due;
   final ActivityType? type;
   final Uint8List? photo;
-  bool done;
+
+  /// Kolom papan task: todo | in_progress | review | done (tabel tasks.status).
+  String status;
+  String assignedTo;
+  String milestone;
+  String sprint;
+  String startDate;
+  String dueDate;
+  int estimatedHours;
+  int storyPoints;
+  String description;
+  String completionNotes;
+  String createdBy;
+  final List<TaskDependency> dependencies;
+  final List<TaskComment> comments;
 
   TaskEntry({
+    this.id = 0,
+    this.projectId = 0,
     required this.title,
     required this.project,
     required this.priority,
     required this.due,
     this.type,
     this.photo,
-    this.done = false,
-  });
+    bool done = false,
+    String? status,
+    this.assignedTo = '',
+    this.milestone = '',
+    this.sprint = '',
+    this.startDate = '',
+    this.dueDate = '',
+    this.estimatedHours = 0,
+    this.storyPoints = 0,
+    this.description = '',
+    this.completionNotes = '',
+    this.createdBy = '',
+    List<TaskDependency>? dependencies,
+    List<TaskComment>? comments,
+  })  : status = status ?? (done ? 'done' : 'todo'),
+        dependencies = dependencies ?? [],
+        comments = comments ?? [];
+
+  bool get done => status == 'done';
+  set done(bool value) => status = value ? 'done' : (status == 'done' ? 'todo' : status);
 }
 
-/// Sumber data tugas bersama, dipakai oleh [TasksScreen] dan form "Tugas
-/// Baru" dari tombol + di bottom nav supaya tugas yang baru dibuat langsung
-/// tampil di daftar tanpa perlu state management library terpisah.
+/// Sumber data tugas bersama, dipakai oleh [TasksScreen], form "Tugas
+/// Baru" dari tombol + di bottom nav, dan layar Detail Proyek/Detail Task
+/// supaya tugas yang baru dibuat langsung tampil di semua tempat.
 class TaskRepository extends ChangeNotifier {
   TaskRepository._();
   static final TaskRepository instance = TaskRepository._();
 
-  final List<TaskEntry> tasks = [
-    TaskEntry(title: 'Finalize wireframes for onboarding', project: 'Mobile App Redesign', priority: TaskPriority.high, due: 'Today'),
-    TaskEntry(title: 'Fix login screen crash on Android', project: 'Mobile App Redesign', priority: TaskPriority.high, due: 'Today'),
-    TaskEntry(title: 'Review API documentation', project: 'Backend API v2', priority: TaskPriority.medium, due: 'Today', done: true),
-    TaskEntry(title: 'Setup CI/CD pipeline', project: 'Backend API v2', priority: TaskPriority.medium, due: 'May 14'),
-    TaskEntry(title: 'Send weekly report to stakeholders', project: 'Marketing Campaign Q2', priority: TaskPriority.low, due: 'Today'),
-    TaskEntry(title: 'Design token documentation', project: 'Mobile App Redesign', priority: TaskPriority.low, due: 'May 15'),
-    TaskEntry(title: 'Database schema migration', project: 'Backend API v2', priority: TaskPriority.high, due: 'May 14'),
-    TaskEntry(title: 'Write unit tests for auth module', project: 'Backend API v2', priority: TaskPriority.medium, due: 'May 16', done: true),
-  ];
+  /// Diisi dari API lewat `PhStore.sync()` (ph_remote.dart).
+  final List<TaskEntry> tasks = [];
 
-  void addTask({
-    required String title,
-    required ActivityType type,
-    Uint8List? photo,
-  }) {
-    tasks.insert(
-      0,
-      TaskEntry(
-        title: title,
-        project: type.label,
-        priority: TaskPriority.medium,
-        due: 'Baru',
-        type: type,
-        photo: photo,
-      ),
-    );
+  void replaceAll(List<TaskEntry> fresh) {
+    tasks
+      ..clear()
+      ..addAll(fresh);
     notifyListeners();
   }
 
-  void setDone(TaskEntry task, bool done) {
-    task.done = done;
+  void insertTask(TaskEntry task) {
+    tasks.insert(0, task);
     notifyListeners();
   }
 
-  void deleteTask(TaskEntry task) {
+  void removeTask(TaskEntry task) {
     tasks.remove(task);
     notifyListeners();
   }
+
+  TaskEntry? byId(int id) {
+    for (final t in tasks) {
+      if (t.id == id) return t;
+    }
+    return null;
+  }
+
+  List<TaskEntry> forProject(String projectName) =>
+      tasks.where((t) => t.project == projectName).toList(growable: false);
+
+  void touch() => notifyListeners();
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_theme.dart';
 import 'activity_type.dart';
 
-enum TaskPriority { high, medium, low }
+enum TaskPriority { urgent, high, medium, low }
 
 class TaskTile extends StatelessWidget {
   final String title;
@@ -28,12 +28,14 @@ class TaskTile extends StatelessWidget {
   });
 
   Color get _priorityColor => switch (priority) {
+        TaskPriority.urgent => AppColors.error,
         TaskPriority.high   => AppColors.error,
         TaskPriority.medium => AppColors.warning,
         TaskPriority.low    => AppColors.success,
       };
 
   String get _priorityLabel => switch (priority) {
+        TaskPriority.urgent => 'Urgent',
         TaskPriority.high   => 'High',
         TaskPriority.medium => 'Medium',
         TaskPriority.low    => 'Low',

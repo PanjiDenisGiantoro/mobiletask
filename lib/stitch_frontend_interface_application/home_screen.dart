@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'app_theme.dart';
 import 'app_mode.dart';
 import 'add_task_form_sheet.dart';
@@ -9,6 +8,13 @@ import 'projects_screen.dart';
 import 'tasks_screen.dart';
 import 'profile_screen.dart';
 import 'hris_screens.dart';
+import '../projecthub/chat_remote.dart';
+import '../projecthub/ph_format.dart';
+import '../projecthub/ph_models.dart';
+import '../projecthub/ph_remote.dart';
+import '../projecthub/ph_store.dart';
+import 'task_repository.dart';
+import '../projecthub/screens/ph_screens.dart';
 import 'widgets/app_icons.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -72,16 +78,33 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Kehadiran',
               entries: [
                 _MoreMenuEntry(
-                  icon: Icons.fingerprint_rounded,
+                  svgAsset: 'assets/icons/illustrations/to_do.svg',
                   label: 'Absen Masuk/Keluar',
                   accent: AppColors.error,
                   onTap: () => pushLater('/attendance'),
                 ),
+              ],
+            ),
+            _MoreMenuSection(
+              title: 'Pengajuan',
+              entries: [
                 _MoreMenuEntry(
-                  icon: Icons.event_available_rounded,
+                  svgAsset: 'assets/icons/illustrations/calendar.svg',
                   label: 'Ajukan Cuti',
                   accent: AppColors.heroStart,
                   onTap: () => pushLater('/leave'),
+                ),
+                _MoreMenuEntry(
+                  svgAsset: 'assets/icons/illustrations/deadline.svg',
+                  label: 'Ajukan Lembur',
+                  accent: AppColors.heroStart,
+                  onTap: () => pushLater('/overtime'),
+                ),
+                _MoreMenuEntry(
+                  svgAsset: 'assets/icons/illustrations/file_management.svg',
+                  label: 'Klaim Reimburse',
+                  accent: AppColors.heroStart,
+                  onTap: () => pushLater('/reimburse'),
                 ),
               ],
             ),
@@ -214,21 +237,19 @@ class _FloatingNavBar extends StatelessWidget {
 // reward/rating), disesuaikan dengan konten Flovig (proyek/tugas/tim).
 
 class _QuickMenuItem {
-  final String? lottieAsset;
-  final IconData? icon;
+  final String svgAsset;
   final String label;
   final Color accent;
   final String? badge;
   final VoidCallback? onTap;
 
   const _QuickMenuItem({
-    this.lottieAsset,
-    this.icon,
+    required this.svgAsset,
     required this.label,
     required this.accent,
     this.badge,
     this.onTap,
-  }) : assert(lottieAsset != null || icon != null);
+  });
 }
 
 class _DashboardBody extends StatefulWidget {
@@ -246,50 +267,49 @@ class _DashboardBodyState extends State<_DashboardBody> {
   late final PageController _favProjectsController;
   late int _favProjectsPage;
 
-  final List<Map<String, dynamic>> _favoriteProjects = const [
-    {
-      'title': 'Mobile App Redesign',
-      'category': 'Design',
-      'icon': Icons.design_services_rounded,
-      'progress': 0.65,
-      'done': 13,
-      'total': 20,
-    },
-    {
-      'title': 'Backend API v2',
-      'category': 'Engineering',
-      'icon': Icons.code_rounded,
-      'progress': 0.40,
-      'done': 8,
-      'total': 18,
-    },
-    {
-      'title': 'Marketing Campaign Q2',
-      'category': 'Marketing',
-      'icon': Icons.campaign_rounded,
-      'progress': 0.80,
-      'done': 8,
-      'total': 10,
-    },
-    {
-      'title': 'Website Revamp',
-      'category': 'Design',
-      'icon': Icons.language_rounded,
-      'progress': 0.25,
-      'done': 3,
-      'total': 12,
-    },
+  static const _favIcons = [
+    Icons.design_services_rounded,
+    Icons.code_rounded,
+    Icons.campaign_rounded,
+    Icons.language_rounded,
   ];
+
+  /// Proyek aktif dari API (maks. 4) untuk carousel "Proyek Favorit".
+  List<Map<String, dynamic>> get _favoriteProjects {
+    final active = PhStore.instance.projects.where((p) => p.status == 'active').take(4).toList();
+    return [
+      for (var i = 0; i < active.length; i++)
+        {
+          'id': active[i].id,
+          'title': active[i].name,
+          'category': active[i].category,
+          'icon': _favIcons[i % _favIcons.length],
+          'progress': _progressOf(active[i]),
+          'done': active[i].doneTasks,
+          'total': active[i].totalTasks,
+        },
+    ];
+  }
+
+  static double _progressOf(Project p) =>
+      p.totalTasks > 0 ? p.doneTasks / p.totalTasks : p.progress / 100;
+
+  void _onStoreChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
-    // Rentang halaman besar & semu-tak-terbatas (dibulatkan ke kelipatan
-    // jumlah proyek favorit) supaya carousel bisa digeser terus ke kiri
-    // maupun kanan — kartu sebelum & sesudah selalu ada yang mengintip,
-    // termasuk saat berada di proyek pertama/terakhir.
-    final loopLength = _favoriteProjects.length;
-    final loopStart = 5000 - (5000 % loopLength);
+    PhStore.instance.addListener(_onStoreChanged);
+    TaskRepository.instance.addListener(_onStoreChanged);
+    ChatRepository.instance.addListener(_onStoreChanged);
+    if (!PhStore.instance.synced) PhStore.instance.sync();
+    ChatRepository.instance.loadInbox();
+    // Rentang halaman besar & semu-tak-terbatas supaya carousel bisa digeser
+    // terus ke kiri maupun kanan. 4992 habis dibagi 1–4 (jumlah proyek
+    // favorit yang mungkin), jadi halaman awal selalu proyek pertama.
+    const loopStart = 4992;
     _favProjectsPage = loopStart;
     _favProjectsController = PageController(
       viewportFraction: 0.74,
@@ -299,30 +319,48 @@ class _DashboardBodyState extends State<_DashboardBody> {
 
   @override
   void dispose() {
+    PhStore.instance.removeListener(_onStoreChanged);
+    TaskRepository.instance.removeListener(_onStoreChanged);
+    ChatRepository.instance.removeListener(_onStoreChanged);
     _favProjectsController.dispose();
     super.dispose();
   }
 
-  final List<Map<String, dynamic>> _priorities = const [
-    {
-      'title': 'Backend API v2',
-      'icon': 'assets/icons/code.svg',
-      'meta': '18 tugas · 1 minggu',
-      'progress': '40%',
-    },
-    {
-      'title': 'Marketing Q2',
-      'icon': 'assets/icons/campaign.svg',
-      'meta': '10 tugas · 3 hari',
-      'progress': '80%',
-    },
+  static const _priorityIcons = [
+    'assets/icons/illustrations/laptop_management.svg',
+    'assets/icons/illustrations/presentation.svg',
   ];
 
-  final List<Map<String, dynamic>> _activity = const [
-    {'title': 'Wireframe onboarding', 'date': '12 Mei', 'done': true},
-    {'title': 'Fix bug login Android', 'date': '10 Mei', 'done': false},
-    {'title': 'Setup CI/CD pipeline', 'date': '8 Mei', 'done': true},
-  ];
+  /// Dua proyek aktif dengan tenggat terdekat.
+  List<Map<String, dynamic>> get _priorities {
+    final today = isoDate(DateTime.now());
+    final list = PhStore.instance.projects
+        .where((p) => p.status == 'active' && p.endDate.isNotEmpty && p.endDate.compareTo(today) >= 0)
+        .toList()
+      ..sort((a, b) => a.endDate.compareTo(b.endDate));
+    return [
+      for (var i = 0; i < list.length && i < 2; i++)
+        {
+          'id': list[i].id,
+          'title': list[i].name,
+          'icon': _priorityIcons[i],
+          'meta': '${list[i].totalTasks} tugas · ${DateTime.parse(list[i].endDate).difference(DateTime.parse(today)).inDays} hari',
+          'progress': '${(_progressOf(list[i]) * 100).round()}%',
+        },
+    ];
+  }
+
+  /// Tiga task terbaru dari API.
+  List<Map<String, dynamic>> get _activity => [
+        for (final t in TaskRepository.instance.tasks.take(3))
+          {'title': t.title, 'date': t.dueDate.isEmpty ? '-' : fmtDate(t.dueDate), 'done': t.done},
+      ];
+
+  String? get _openTaskBadge {
+    final me = PhStore.meId;
+    final n = TaskRepository.instance.tasks.where((t) => !t.done && t.assignedTo == me).length;
+    return n == 0 ? null : '$n';
+  }
 
   void _toast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -330,55 +368,54 @@ class _DashboardBodyState extends State<_DashboardBody> {
 
   List<_QuickMenuItem> get _menuItems => [
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/folder.json',
+          svgAsset: 'assets/icons/illustrations/project_management.svg',
           label: 'Proyek',
           accent: AppColors.info,
-          badge: '12',
+          badge: PhStore.instance.projects.isEmpty ? null : '${PhStore.instance.projects.length}',
           onTap: () => context.push('/projects'),
         ),
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/checklist.json',
+          svgAsset: 'assets/icons/illustrations/task.svg',
           label: 'Tugas',
           accent: AppColors.warning,
-          badge: '5 baru',
+          badge: _openTaskBadge,
           onTap: () => context.push('/tasks'),
         ),
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/team.json',
+          svgAsset: 'assets/icons/illustrations/human_source.svg',
           label: 'Tim',
           accent: AppColors.heroStart,
           badge: 'Live',
           onTap: () => _toast('Fitur Tim akan segera hadir'),
         ),
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/chart.json',
+          svgAsset: 'assets/icons/illustrations/pie_chart.svg',
           label: 'Laporan',
           accent: AppColors.success,
           onTap: () => context.push('/reports'),
         ),
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/calendar.json',
+          svgAsset: 'assets/icons/illustrations/calendar.svg',
           label: 'Kalender',
           accent: AppColors.accent400,
-          badge: '3',
           onTap: () => context.push('/calendar'),
         ),
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/chat.json',
+          svgAsset: 'assets/icons/illustrations/brainstorming.svg',
           label: 'Chat',
           accent: AppColors.primary600,
-          badge: '2',
+          badge: ChatRepository.instance.totalUnread == 0 ? null : '${ChatRepository.instance.totalUnread}',
           onTap: () => context.push('/messages'),
         ),
         _QuickMenuItem(
-          icon: Icons.fact_check_rounded,
+          svgAsset: 'assets/icons/illustrations/stamp.svg',
           label: 'Persetujuan',
           accent: AppColors.error,
-          badge: '2',
-          onTap: () => _toast('Fitur Persetujuan akan segera hadir'),
+          badge: PhStore.instance.pendingForMe == 0 ? null : '${PhStore.instance.pendingForMe}',
+          onTap: () => context.push('/approvals'),
         ),
         _QuickMenuItem(
-          lottieAsset: 'assets/lottie/apps_grid.json',
+          svgAsset: 'assets/icons/illustrations/organize.svg',
           label: 'Lainnya',
           accent: AppColors.grey500,
           onTap: _openMoreMenu,
@@ -407,49 +444,55 @@ class _DashboardBodyState extends State<_DashboardBody> {
               title: 'Workspace',
               entries: [
                 _MoreMenuEntry(
-                  icon: Icons.calendar_month_rounded,
+                  svgAsset: 'assets/icons/illustrations/calendar.svg',
                   label: 'Calendar',
                   accent: AppColors.heroStart,
                   onTap: () => pushLater('/calendar'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.video_camera_front_rounded,
+                  svgAsset: 'assets/icons/illustrations/presentation.svg',
                   label: 'Meetings',
                   accent: AppColors.heroStart,
                   onTap: () => toastLater('Fitur Meetings akan segera hadir'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.search_rounded,
+                  svgAsset: 'assets/icons/illustrations/web.svg',
                   label: 'Global Search',
                   accent: AppColors.heroStart,
                   onTap: () => toastLater('Fitur Global Search akan segera hadir'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.task_alt_rounded,
+                  svgAsset: 'assets/icons/illustrations/productive.svg',
                   label: 'Aktivitas Kerja',
                   accent: AppColors.heroStart,
                   onTap: () => toastLater('Fitur Aktivitas Kerja akan segera hadir'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.inbox_rounded,
+                  svgAsset: 'assets/icons/illustrations/notes.svg',
                   label: 'Requests',
                   accent: AppColors.heroStart,
-                  onTap: () => toastLater('Fitur Requests akan segera hadir'),
+                  onTap: () => pushLater('/requests'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.fact_check_rounded,
+                  svgAsset: 'assets/icons/illustrations/stamp.svg',
                   label: 'Approvals',
                   accent: AppColors.heroStart,
-                  onTap: () => toastLater('Fitur Approvals akan segera hadir'),
+                  onTap: () => pushLater('/approvals'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.receipt_long_rounded,
+                  svgAsset: 'assets/icons/illustrations/review.svg',
+                  label: 'Bug Tickets',
+                  accent: AppColors.heroStart,
+                  onTap: () => pushLater('/tickets'),
+                ),
+                _MoreMenuEntry(
+                  svgAsset: 'assets/icons/illustrations/revenue.svg',
                   label: 'Invoices',
                   accent: AppColors.heroStart,
                   onTap: () => toastLater('Fitur Invoices akan segera hadir'),
                 ),
                 _MoreMenuEntry(
-                  icon: Icons.bar_chart_rounded,
+                  svgAsset: 'assets/icons/illustrations/pie_chart.svg',
                   label: 'Reports',
                   accent: AppColors.heroStart,
                   onTap: () => pushLater('/reports'),
@@ -460,7 +503,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
               title: 'Lainnya',
               entries: [
                 _MoreMenuEntry(
-                  icon: Icons.admin_panel_settings_rounded,
+                  svgAsset: 'assets/icons/illustrations/gear.svg',
                   label: 'Admin & Pengaturan',
                   accent: AppColors.primary600,
                   onTap: () => pushLater('/admin-settings'),
@@ -658,6 +701,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
   /// Otomatis di header — bisa digeser untuk memilih proyek favorit mana
   /// yang mau dibuka.
   Widget _buildFavoriteProjectsCarousel() {
+    final favorites = _favoriteProjects;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -674,6 +718,24 @@ class _DashboardBodyState extends State<_DashboardBody> {
             ],
           ),
         ),
+        if (favorites.isEmpty)
+          Container(
+            height: 168,
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            child: PhStore.instance.syncing
+                ? const CircularProgressIndicator(color: Colors.white)
+                : Text(
+                    PhStore.instance.syncError ?? 'Belum ada proyek aktif',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+          )
+        else ...[
         SizedBox(
           height: 168,
           child: PageView.builder(
@@ -708,7 +770,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: _buildFavoriteProjectCard(
-                  _favoriteProjects[i % _favoriteProjects.length],
+                  favorites[i % favorites.length],
                 ),
               ),
             ),
@@ -717,8 +779,8 @@ class _DashboardBodyState extends State<_DashboardBody> {
         const SizedBox(height: AppSpacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_favoriteProjects.length, (i) {
-            final active = i == _favProjectsPage % _favoriteProjects.length;
+          children: List.generate(favorites.length, (i) {
+            final active = i == _favProjectsPage % favorites.length;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -731,6 +793,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
             );
           }),
         ),
+        ],
       ],
     );
   }
@@ -738,7 +801,9 @@ class _DashboardBodyState extends State<_DashboardBody> {
   Widget _buildFavoriteProjectCard(Map<String, dynamic> p) {
     final progress = p['progress'] as double;
     return GestureDetector(
-      onTap: () => context.push('/projects'),
+      onTap: () {
+        context.push('/project/${p['id']}');
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -1040,16 +1105,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
                   color: item.accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: item.lottieAsset != null
-                    ? ColorFiltered(
-                        colorFilter: ColorFilter.mode(item.accent, BlendMode.srcIn),
-                        child: Lottie.asset(
-                          item.lottieAsset!,
-                          fit: BoxFit.contain,
-                          repeat: true,
-                        ),
-                      )
-                    : Icon(item.icon, color: item.accent, size: 22),
+                child: SvgPicture.asset(item.svgAsset, fit: BoxFit.contain),
               ),
               if (item.badge != null)
                 Positioned(
@@ -1308,13 +1364,13 @@ class _DashboardBodyState extends State<_DashboardBody> {
 }
 
 class _MoreMenuEntry {
-  final IconData icon;
+  final String svgAsset;
   final String label;
   final Color accent;
   final VoidCallback onTap;
 
   const _MoreMenuEntry({
-    required this.icon,
+    required this.svgAsset,
     required this.label,
     required this.accent,
     required this.onTap,
@@ -1425,11 +1481,12 @@ class _MoreMenuTile extends StatelessWidget {
             Container(
               width: 34,
               height: 34,
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: entry.accent.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(entry.icon, color: entry.accent, size: 17),
+              child: SvgPicture.asset(entry.svgAsset, fit: BoxFit.contain),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -1468,7 +1525,7 @@ class _ActivityTile extends StatelessWidget {
     final done = activity['done'] == true;
     final color = done ? AppColors.success : AppColors.error;
     final bg = done ? AppColors.successBg : AppColors.errorBg;
-    final icon = done ? 'assets/icons/check.svg' : 'assets/icons/alert.svg';
+    final icon = done ? 'assets/icons/illustrations/checklist.svg' : 'assets/icons/illustrations/deadline.svg';
 
     return Container(
       padding: const EdgeInsets.symmetric(

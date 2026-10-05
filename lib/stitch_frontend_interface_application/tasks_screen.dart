@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '../projecthub/ph_remote.dart';
+import '../projecthub/ph_store.dart';
 import 'add_task_form_sheet.dart';
 import 'app_theme.dart';
 import 'task_repository.dart';
@@ -26,28 +29,42 @@ class _TasksScreenState extends State<TasksScreen>
   List<TaskEntry> get _filtered {
     if (_selectedFilter == 'All') return _tasks;
     final map = {'High': TaskPriority.high, 'Medium': TaskPriority.medium, 'Low': TaskPriority.low};
-    return _tasks.where((t) => t.priority == map[_selectedFilter]).toList();
+    return _tasks.where((t) {
+      // Prioritas urgent dikelompokkan ke filter High.
+      if (_selectedFilter == 'High') return t.priority == TaskPriority.high || t.priority == TaskPriority.urgent;
+      return t.priority == map[_selectedFilter];
+    }).toList();
   }
 
   int get _doneCount => _tasks.where((t) => t.done).length;
 
-  bool _loading = true;
+  bool get _loading => PhStore.instance.syncing && _tasks.isEmpty;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     TaskRepository.instance.addListener(_onTasksChanged);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) setState(() => _loading = false);
-    });
+    PhStore.instance.addListener(_onTasksChanged);
+    if (!PhStore.instance.synced) PhStore.instance.sync();
   }
 
-  void _onTasksChanged() => setState(() {});
+  void _onTasksChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _run(Future<void> action) async {
+    try {
+      await action;
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 
   @override
   void dispose() {
     TaskRepository.instance.removeListener(_onTasksChanged);
+    PhStore.instance.removeListener(_onTasksChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -195,9 +212,12 @@ class _TasksScreenState extends State<TasksScreen>
     final list = _filtered.where((t) => t.done == showDone).toList();
 
     if (list.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      final error = PhStore.instance.syncError;
+      return RefreshIndicator(
+        onRefresh: PhStore.instance.sync,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(top: 120),
           children: [
             Icon(
               showDone ? Icons.check_circle_outline : Icons.task_outlined,
@@ -206,7 +226,8 @@ class _TasksScreenState extends State<TasksScreen>
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              showDone ? 'No completed tasks yet' : 'All tasks done!',
+              error ?? (showDone ? 'No completed tasks yet' : 'All tasks done!'),
+              textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.grey700, fontSize: 14),
             ),
           ],
@@ -214,7 +235,10 @@ class _TasksScreenState extends State<TasksScreen>
       );
     }
 
-    return ListView.separated(
+    return RefreshIndicator(
+      onRefresh: PhStore.instance.sync,
+      child: ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.md,
@@ -232,7 +256,7 @@ class _TasksScreenState extends State<TasksScreen>
             extentRatio: 0.25,
             children: [
               SlidableAction(
-                onPressed: (_) => TaskRepository.instance.deleteTask(task),
+                onPressed: (_) => _run(PhStore.instance.deleteTask(task)),
                 backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
                 icon: Icons.delete_outline_rounded,
@@ -241,19 +265,24 @@ class _TasksScreenState extends State<TasksScreen>
               ),
             ],
           ),
-          child: TaskTile(
-            title: task.title,
-            project: task.project,
-            priority: task.priority,
-            dueDate: task.due,
-            isDone: task.done,
-            type: task.type,
-            photo: task.photo,
-            onChanged: (val) =>
-                TaskRepository.instance.setDone(task, val ?? false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => context.push('/task/${task.id}'),
+            child: TaskTile(
+              title: task.title,
+              project: task.project,
+              priority: task.priority,
+              dueDate: task.due,
+              isDone: task.done,
+              type: task.type,
+              photo: task.photo,
+              onChanged: (val) =>
+                  _run(PhStore.instance.setTaskStatus(task, (val ?? false) ? 'done' : 'todo')),
+            ),
           ),
         ).animate().fadeIn(delay: Duration(milliseconds: 40 * i), duration: 250.ms).slideY(begin: 0.08, end: 0);
       },
+    ),
     );
   }
 }

@@ -30,19 +30,19 @@ const kDefaultBannerSlides = [
     badge: 'PROYEK',
     title: 'Kelola Proyek\nLebih Rapi',
     subtitle: 'Atur deadline dan progres tim tanpa ribet.',
-    watermark: 'assets/icons/project.svg',
+    watermark: 'assets/icons/illustrations/project_management.svg',
   ),
   BannerSlide(
     badge: 'TUGAS',
     title: 'Pantau Tugas\nReal-Time',
     subtitle: 'Tandai selesai dan lihat prioritas dalam genggaman.',
-    watermark: 'assets/icons/task.svg',
+    watermark: 'assets/icons/illustrations/task.svg',
   ),
   BannerSlide(
     badge: 'TIM',
     title: 'Kolaborasi Tim\nTanpa Batas',
     subtitle: 'Diskusi dan koordinasi jarak jauh jadi mudah.',
-    watermark: 'assets/icons/team.svg',
+    watermark: 'assets/icons/illustrations/human_source.svg',
   ),
 ];
 

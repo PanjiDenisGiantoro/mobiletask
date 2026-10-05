@@ -17,9 +17,22 @@ class _ShiftSettingsScreenState extends State<ShiftSettingsScreen> {
   void initState() {
     super.initState();
     ShiftRepository.instance.addListener(_onChanged);
+    ShiftRepository.instance.load();
   }
 
-  void _onChanged() => setState(() {});
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _run(Future<void> Function() action, String done) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await action();
+      messenger.showSnackBar(SnackBar(content: Text(done)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
 
   @override
   void dispose() {
@@ -48,13 +61,13 @@ class _ShiftSettingsScreenState extends State<ShiftSettingsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Hapus Shift'),
-        content: Text('Hapus "${shift.name}"? Karyawan yang memakai shift ini akan dipindah ke shift lain.'),
+        content: Text('Hapus "${shift.name}"? Karyawan yang memakai shift ini menjadi tanpa shift sampai diatur ulang.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Batal')),
           TextButton(
             onPressed: () {
-              repo.deleteShift(shift);
               Navigator.pop(dialogContext);
+              _run(() => repo.deleteShift(shift), 'Shift dihapus');
             },
             child: const Text('Hapus', style: TextStyle(color: AppColors.error)),
           ),
@@ -86,13 +99,23 @@ class _ShiftSettingsScreenState extends State<ShiftSettingsScreen> {
         onPressed: () => _openShiftForm(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: ListView(
+      body: RefreshIndicator(
+        onRefresh: repo.load,
+        child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
         children: [
           const Text(
             'Atur jam kerja tiap shift, lalu tetapkan shift masing-masing karyawan agar tampil di Absensi.',
             style: TextStyle(fontSize: 12.5, color: AppColors.grey500),
           ),
+          if (repo.loading && repo.shifts.isEmpty)
+            const Padding(padding: EdgeInsets.all(AppSpacing.lg), child: Center(child: CircularProgressIndicator())),
+          if (repo.error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: Text(repo.error!, style: const TextStyle(fontSize: 13, color: AppColors.error)),
+            ),
           const SizedBox(height: AppSpacing.lg),
           _sectionTitle('Daftar Shift'),
           const SizedBox(height: AppSpacing.sm),
@@ -128,7 +151,7 @@ class _ShiftSettingsScreenState extends State<ShiftSettingsScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  shift.range,
+                                  '${shift.range} · istirahat ${shift.breakRange} · toleransi ${shift.toleranceMinutes} mnt',
                                   style: const TextStyle(fontSize: 12, color: AppColors.grey500),
                                 ),
                               ],
@@ -194,7 +217,7 @@ class _ShiftSettingsScreenState extends State<ShiftSettingsScreen> {
                                 .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
                                 .toList(),
                             onChanged: (id) {
-                              if (id != null) repo.assignShift(name, id);
+                              if (id != null) _run(() => repo.assignShift(name, id), 'Shift $name diperbarui');
                             },
                           ),
                         ],
@@ -207,6 +230,7 @@ class _ShiftSettingsScreenState extends State<ShiftSettingsScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -232,6 +256,9 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
   late final TextEditingController _nameController;
   late TimeOfDay _start;
   late TimeOfDay _end;
+  late TimeOfDay _breakStart;
+  late TimeOfDay _breakEnd;
+  late final TextEditingController _toleranceController;
   late Color _color;
 
   static const _palette = [
@@ -250,8 +277,15 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
     _nameController = TextEditingController(text: shift?.name ?? '');
     _start = shift == null ? const TimeOfDay(hour: 8, minute: 0) : _parseTime(shift.startTime);
     _end = shift == null ? const TimeOfDay(hour: 17, minute: 0) : _parseTime(shift.endTime);
+    _breakStart = (shift == null || shift.breakStart.isEmpty) ? const TimeOfDay(hour: 12, minute: 0) : _parseTime(shift.breakStart);
+    _breakEnd = (shift == null || shift.breakEnd.isEmpty) ? const TimeOfDay(hour: 13, minute: 0) : _parseTime(shift.breakEnd);
+    _toleranceController = TextEditingController(text: '${shift?.toleranceMinutes ?? 15}');
     _color = shift?.color ?? _palette.first;
+    _workingDays = {...(shift == null || shift.workingDays.isEmpty) ? const [1, 2, 3, 4, 5] : shift.workingDays};
   }
+
+  late Set<int> _workingDays;
+  static const _dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
   TimeOfDay _parseTime(String value) {
     final parts = value.split(':');
@@ -263,6 +297,7 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _toleranceController.dispose();
     super.dispose();
   }
 
@@ -278,7 +313,21 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
     });
   }
 
-  void _submit() {
+  Future<void> _pickBreak({required bool isStart}) async {
+    final picked = await showTimePicker(context: context, initialTime: isStart ? _breakStart : _breakEnd);
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _breakStart = picked;
+      } else {
+        _breakEnd = picked;
+      }
+    });
+  }
+
+  bool _saving = false;
+
+  Future<void> _submit() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -287,17 +336,37 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
       return;
     }
     final repo = ShiftRepository.instance;
+    final messenger = ScaffoldMessenger.of(context);
+    final tolerance = int.tryParse(_toleranceController.text.trim()) ?? 0;
     final startTime = _format(_start);
     final endTime = _format(_end);
-    if (widget.shift == null) {
-      repo.addShift(name: name, startTime: startTime, endTime: endTime, color: _color);
-    } else {
-      repo.updateShift(widget.shift!, name: name, startTime: startTime, endTime: endTime, color: _color);
+    if (_workingDays.isEmpty) {
+      messenger.showSnackBar(const SnackBar(content: Text('Pilih minimal satu hari kerja')));
+      return;
     }
+    setState(() => _saving = true);
+    try {
+      if (widget.shift == null) {
+        await repo.addShift(
+          name: name, startTime: startTime, endTime: endTime, color: _color,
+          breakStart: _format(_breakStart), breakEnd: _format(_breakEnd), toleranceMinutes: tolerance,
+          workingDays: _workingDays.toList()..sort(),
+        );
+      } else {
+        await repo.updateShift(
+          widget.shift!, name: name, startTime: startTime, endTime: endTime, color: _color,
+          breakStart: _format(_breakStart), breakEnd: _format(_breakEnd), toleranceMinutes: tolerance,
+          workingDays: _workingDays.toList()..sort(),
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _saving = false);
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Shift "$name" berhasil disimpan')),
-    );
+    messenger.showSnackBar(SnackBar(content: Text('Shift "$name" berhasil disimpan')));
   }
 
   @override
@@ -331,7 +400,9 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
                   ),
                 ),
               ),
-              Padding(
+              Flexible(
+                child: SingleChildScrollView(
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,8 +437,56 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimeField(label: 'Mulai Istirahat', value: _format(_breakStart), onTap: () => _pickBreak(isStart: true)),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _TimeField(label: 'Selesai Istirahat', value: _format(_breakEnd), onTap: () => _pickBreak(isStart: false)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     const Text(
-                      'Warna',
+                      'Toleransi Terlambat (menit)',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.grey700),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    TextField(
+                      controller: _toleranceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: AppColors.grey100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.medium),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const Text(
+                      'Hari Kerja',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.grey700),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final d in const [1, 2, 3, 4, 5, 6, 0])
+                          FilterChip(
+                            label: Text(_dayNames[d]),
+                            selected: _workingDays.contains(d),
+                            onSelected: (v) => setState(() => v ? _workingDays.add(d) : _workingDays.remove(d)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const Text(
+                      'Warna (tampilan di aplikasi)',
                       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.grey700),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -393,20 +512,22 @@ class _ShiftFormSheetState extends State<_ShiftFormSheet> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _submit,
+                        onPressed: _saving ? null : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.heroStart,
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 4),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.medium)),
                         ),
-                        child: const Text(
-                          'Simpan Shift',
+                        child: Text(
+                          _saving ? 'Menyimpan...' : 'Simpan Shift',
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
                         ),
                       ),
                     ),
                   ],
                 ),
+              ),
+              ),
               ),
             ],
           ),

@@ -1,6 +1,11 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import '../projecthub/ph_format.dart';
+import '../projecthub/ph_forms_project.dart';
+import '../projecthub/ph_remote.dart';
+import '../projecthub/ph_store.dart';
+import 'package:go_router/go_router.dart';
 import 'app_theme.dart';
 import 'widgets/project_card.dart';
 import 'widgets/skeleton_list.dart';
@@ -19,77 +24,45 @@ class _ProjectsScreenState extends State<ProjectsScreen>
   String _searchQuery = '';
   String? _categoryFilter;
 
-  final List<Map<String, dynamic>> _projects = [
-    {
-      'title': 'Mobile App Redesign',
-      'category': 'Design',
-      'progress': 0.65,
-      'totalTasks': 24,
-      'doneTasks': 16,
-      'memberColors': [AppColors.primary600, AppColors.accent400, AppColors.warning],
-      'dueDate': 'May 20',
-      'categoryColor': AppColors.info,
-      'status': 'active',
-    },
-    {
-      'title': 'Backend API v2',
-      'category': 'Development',
-      'progress': 0.40,
-      'totalTasks': 18,
-      'doneTasks': 7,
-      'memberColors': [AppColors.success, AppColors.primary400],
-      'dueDate': 'Jun 01',
-      'categoryColor': AppColors.success,
-      'status': 'active',
-    },
-    {
-      'title': 'Marketing Campaign Q2',
-      'category': 'Marketing',
-      'progress': 0.80,
-      'totalTasks': 10,
-      'doneTasks': 8,
-      'memberColors': [AppColors.warning, AppColors.error, AppColors.accent400],
-      'dueDate': 'May 15',
-      'categoryColor': AppColors.warning,
-      'status': 'active',
-    },
-    {
-      'title': 'Website Revamp',
-      'category': 'Design',
-      'progress': 1.0,
-      'totalTasks': 30,
-      'doneTasks': 30,
-      'memberColors': [AppColors.primary600, AppColors.success],
-      'dueDate': 'Apr 30',
-      'categoryColor': AppColors.info,
-      'status': 'completed',
-    },
-    {
-      'title': 'CRM Integration',
-      'category': 'Development',
-      'progress': 1.0,
-      'totalTasks': 15,
-      'doneTasks': 15,
-      'memberColors': [AppColors.accent400, AppColors.primary400],
-      'dueDate': 'Apr 10',
-      'categoryColor': AppColors.success,
-      'status': 'completed',
-    },
-  ];
+  /// Daftar proyek dibaca dari [PhStore] (tabel projects) supaya proyek baru
+  /// dan hasil ubah dari Detail Proyek langsung tampil di sini.
+  List<Map<String, dynamic>> get _projects => PhStore.instance.projects.map((p) {
+        final color = switch (p.category) {
+          'Development' || 'Internal' => AppColors.success,
+          'Marketing' => AppColors.warning,
+          _ => AppColors.info,
+        };
+        return <String, dynamic>{
+          'id': p.id,
+          'title': p.name,
+          'category': p.category,
+          'progress': p.totalTasks > 0 ? p.doneTasks / p.totalTasks : p.progress / 100,
+          'totalTasks': p.totalTasks,
+          'doneTasks': p.doneTasks,
+          'memberColors': p.memberColors.map(Color.new).toList(),
+          'dueDate': fmtDate(p.endDate),
+          'categoryColor': color,
+          'status': p.completed ? 'completed' : 'active',
+        };
+      }).toList();
 
-  bool _loading = true;
+  bool get _loading => PhStore.instance.syncing && PhStore.instance.projects.isEmpty;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) setState(() => _loading = false);
-    });
+    PhStore.instance.addListener(_onStoreChanged);
+    if (!PhStore.instance.synced) PhStore.instance.sync();
+  }
+
+  void _onStoreChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    PhStore.instance.removeListener(_onStoreChanged);
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -186,7 +159,7 @@ class _ProjectsScreenState extends State<ProjectsScreen>
         padding: const EdgeInsets.only(bottom: 70),
         child: FloatingActionButton.extended(
           heroTag: 'projects_fab',
-          onPressed: () {},
+          onPressed: () => openProjectForm(context),
           backgroundColor: AppColors.heroStart,
           icon: const Icon(Icons.add, color: Colors.white),
           label: const Text('New Project',
@@ -243,19 +216,25 @@ class _ProjectsScreenState extends State<ProjectsScreen>
 
   Widget _buildProjectList(List<Map<String, dynamic>> list) {
     if (list.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      return RefreshIndicator(
+        onRefresh: PhStore.instance.sync,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(top: 120),
           children: [
-            Icon(Icons.folder_off_outlined, size: 56, color: AppColors.grey400),
-            SizedBox(height: AppSpacing.sm),
-            Text('No projects found',
-                style: TextStyle(color: AppColors.grey700, fontSize: 14)),
+            const Icon(Icons.folder_off_outlined, size: 56, color: AppColors.grey400),
+            const SizedBox(height: AppSpacing.sm),
+            Text(PhStore.instance.syncError ?? 'No projects found',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.grey700, fontSize: 14)),
           ],
         ),
       );
     }
-    return ListView.separated(
+    return RefreshIndicator(
+      onRefresh: PhStore.instance.sync,
+      child: ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
         AppSpacing.md,
@@ -266,17 +245,22 @@ class _ProjectsScreenState extends State<ProjectsScreen>
       separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (_, i) {
         final p = list[i];
-        return ProjectCard(
-          title: p['title'],
-          category: p['category'],
-          progress: p['progress'],
-          totalTasks: p['totalTasks'],
-          doneTasks: p['doneTasks'],
-          memberColors: p['memberColors'],
-          dueDate: p['dueDate'],
-          categoryColor: p['categoryColor'],
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => context.push('/project/${p['id']}'),
+          child: ProjectCard(
+            title: p['title'],
+            category: p['category'],
+            progress: p['progress'],
+            totalTasks: p['totalTasks'],
+            doneTasks: p['doneTasks'],
+            memberColors: p['memberColors'],
+            dueDate: p['dueDate'],
+            categoryColor: p['categoryColor'],
+          ),
         );
       },
+    ),
     );
   }
 }
