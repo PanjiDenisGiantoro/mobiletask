@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
-import 'stitch_frontend_interface_application/auth_repository.dart';
+import 'app/data/auth_repository.dart';
 
 /// Splash screen. Animasi utama berasal dari `assets/lottie/splash.json`
 /// (Lottie) — ganti file itu untuk mengubah motion tanpa menyentuh kode ini.

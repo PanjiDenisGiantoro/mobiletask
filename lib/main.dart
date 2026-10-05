@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'router.dart';
-import 'stitch_frontend_interface_application/app_theme.dart';
+import 'app/theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());

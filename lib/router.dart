@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'splash_screen.dart';
-import 'stitch_frontend_interface_application/welcome_screen.dart';
-import 'stitch_frontend_interface_application/login_form_screen.dart';
-import 'stitch_frontend_interface_application/register_form_screen.dart';
-import 'stitch_frontend_interface_application/home_screen.dart';
-import 'stitch_frontend_interface_application/projects_screen.dart';
-import 'stitch_frontend_interface_application/tasks_screen.dart';
-import 'stitch_frontend_interface_application/admin_settings_screen.dart';
-import 'stitch_frontend_interface_application/shift_settings_screen.dart';
-import 'stitch_frontend_interface_application/calendar_screen.dart';
-import 'stitch_frontend_interface_application/reports_screen.dart';
-import 'projecthub/screens/ph_screens.dart';
+import 'app/screens/welcome_screen.dart';
+import 'app/screens/login_form_screen.dart';
+import 'app/screens/register_form_screen.dart';
+import 'app/screens/home_screen.dart';
+import 'app/screens/projects_screen.dart';
+import 'app/screens/tasks_screen.dart';
+import 'app/screens/admin_settings_screen.dart';
+import 'app/screens/shift_settings_screen.dart';
+import 'app/screens/calendar_screen.dart';
+import 'app/screens/reports_screen.dart';
+import 'app/screens/ph_screens.dart';
 
 /// Transisi fade, dipakai untuk splash → welcome (dan setiap kali kembali
 /// ke welcome, misalnya sesudah logout) — meniru transisi asli di

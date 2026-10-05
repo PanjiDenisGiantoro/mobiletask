@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:untitled/projecthub/ph_format.dart';
-import 'package:untitled/projecthub/ph_models.dart';
-import 'package:untitled/projecthub/ph_store.dart';
-import 'package:untitled/projecthub/screens/ph_screens.dart';
+import 'package:untitled/app/utils/ph_format.dart';
+import 'package:untitled/app/data/ph_models.dart';
+import 'package:untitled/app/data/ph_store.dart';
+import 'package:untitled/app/screens/ph_screens.dart';
 import 'package:untitled/router.dart';
-import 'package:untitled/stitch_frontend_interface_application/task_repository.dart';
-import 'package:untitled/stitch_frontend_interface_application/widgets/task_tile.dart';
+import 'package:untitled/app/data/task_repository.dart';
+import 'package:untitled/app/widgets/task_tile.dart';
 
 /// Data server diganti fixture karena tes tidak login ke API.
 void _loadFixtures(PhStore store) {
