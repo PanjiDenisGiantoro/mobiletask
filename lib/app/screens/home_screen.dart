@@ -8,6 +8,8 @@ import 'projects_screen.dart';
 import 'tasks_screen.dart';
 import 'profile_screen.dart';
 import 'hris_screens.dart';
+import '../data/attendance_repository.dart';
+import '../data/auth_repository.dart';
 import '../data/chat_remote.dart';
 import '../utils/ph_format.dart';
 import '../data/ph_models.dart';
@@ -16,6 +18,7 @@ import '../data/ph_store.dart';
 import '../data/task_repository.dart';
 import 'ph_screens.dart';
 import '../widgets/app_icons.dart';
+import '../widgets/ph_widgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
     }
     return [
-      const _DashboardBody(),
+      _DashboardBody(onOpenProfile: () => setState(() => _selectedNav = 3)),
       const ProjectsScreen(),
       const TasksScreen(),
       ProfileScreen(currentMode: _mode, onModeChanged: _changeMode),
@@ -165,13 +168,18 @@ class _FloatingNavBar extends StatelessWidget {
   List<AppIconType?> get _icons =>
       mode == AppMode.hris ? _hrisIcons : _taskIcons;
 
+  static const _taskLabels = ['Beranda', 'Proyek', '', 'Tugas', 'Profil'];
+  static const _hrisLabels = ['Beranda', 'Absensi', '', 'Cuti', 'Profil'];
+
+  List<String> get _labels => mode == AppMode.hris ? _hrisLabels : _taskLabels;
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
         child: Container(
-          height: 58,
+          height: 68,
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(AppRadius.full),
@@ -187,11 +195,14 @@ class _FloatingNavBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(5, (i) {
               if (i == 2) {
-                return GestureDetector(
+                return Semantics(
+                  button: true,
+                  label: mode == AppMode.hris ? 'Buat pengajuan' : 'Tambah tugas',
+                  child: GestureDetector(
                   onTap: onAddTap,
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: AppColors.heroStart,
                       shape: BoxShape.circle,
@@ -206,20 +217,43 @@ class _FloatingNavBar extends StatelessWidget {
                     child: const AppIcon(
                       AppIconType.plus,
                       color: Colors.white,
-                      size: 19,
+                      size: 21,
                     ),
+                  ),
                   ),
                 );
               }
               final navIndex = i > 2 ? i - 1 : i;
               final selected = selectedIndex == navIndex;
-              return IconButton(
-                onPressed: () => onTap(navIndex),
-                icon: AppIcon(
-                  _icons[i]!,
-                  color: selected ? AppColors.heroStart : AppColors.grey400,
-                  size: 21,
-                  strokeWidth: selected ? 2.0 : 1.7,
+              final color = selected ? AppColors.primary700 : AppColors.grey700;
+              return Expanded(
+                child: Semantics(
+                  button: true,
+                  selected: selected,
+                  child: InkResponse(
+                    onTap: () => onTap(navIndex),
+                    radius: 32,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AppIcon(
+                          _icons[i]!,
+                          color: color,
+                          size: 22,
+                          strokeWidth: selected ? 2.0 : 1.7,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _labels[i],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: color,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
             }),
@@ -253,16 +287,17 @@ class _QuickMenuItem {
 }
 
 class _DashboardBody extends StatefulWidget {
-  const _DashboardBody();
+  final VoidCallback onOpenProfile;
+
+  const _DashboardBody({required this.onOpenProfile});
 
   @override
   State<_DashboardBody> createState() => _DashboardBodyState();
 }
 
 class _DashboardBodyState extends State<_DashboardBody> {
-  bool _showStreakCard = true;
-  bool _showRatingCard = true;
-  int _ratingStars = 0;
+  final _attendance = AttendanceRepository.instance;
+  bool _submitting = false;
 
   late final PageController _favProjectsController;
   late int _favProjectsPage;
@@ -304,8 +339,10 @@ class _DashboardBodyState extends State<_DashboardBody> {
     PhStore.instance.addListener(_onStoreChanged);
     TaskRepository.instance.addListener(_onStoreChanged);
     ChatRepository.instance.addListener(_onStoreChanged);
+    _attendance.addListener(_onStoreChanged);
     if (!PhStore.instance.synced) PhStore.instance.sync();
     ChatRepository.instance.loadInbox();
+    if (_attendance.today == null) _attendance.loadToday();
     // Rentang halaman besar & semu-tak-terbatas supaya carousel bisa digeser
     // terus ke kiri maupun kanan. 4992 habis dibagi 1–4 (jumlah proyek
     // favorit yang mungkin), jadi halaman awal selalu proyek pertama.
@@ -322,6 +359,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
     PhStore.instance.removeListener(_onStoreChanged);
     TaskRepository.instance.removeListener(_onStoreChanged);
     ChatRepository.instance.removeListener(_onStoreChanged);
+    _attendance.removeListener(_onStoreChanged);
     _favProjectsController.dispose();
     super.dispose();
   }
@@ -353,7 +391,12 @@ class _DashboardBodyState extends State<_DashboardBody> {
   /// Tiga task terbaru dari API.
   List<Map<String, dynamic>> get _activity => [
         for (final t in TaskRepository.instance.tasks.take(3))
-          {'title': t.title, 'date': t.dueDate.isEmpty ? '-' : fmtDate(t.dueDate), 'done': t.done},
+          {
+            'title': t.title,
+            'date': t.dueDate.isEmpty ? 'Tanpa tenggat' : 'Tenggat ${fmtDate(t.dueDate)}',
+            'done': t.done,
+            'late': !t.done && t.dueDate.isNotEmpty && t.dueDate.compareTo(isoDate(DateTime.now())) < 0,
+          },
       ];
 
   String? get _openTaskBadge {
@@ -362,9 +405,6 @@ class _DashboardBodyState extends State<_DashboardBody> {
     return n == 0 ? null : '$n';
   }
 
-  void _toast(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
 
   List<_QuickMenuItem> get _menuItems => [
         _QuickMenuItem(
@@ -382,11 +422,10 @@ class _DashboardBodyState extends State<_DashboardBody> {
           onTap: () => context.push('/tasks'),
         ),
         _QuickMenuItem(
-          svgAsset: 'assets/icons/illustrations/human_source.svg',
-          label: 'Tim',
+          svgAsset: 'assets/icons/illustrations/notes.svg',
+          label: 'Pengajuan',
           accent: AppColors.heroStart,
-          badge: 'Live',
-          onTap: () => _toast('Fitur Tim akan segera hadir'),
+          onTap: () => context.push('/requests'),
         ),
         _QuickMenuItem(
           svgAsset: 'assets/icons/illustrations/pie_chart.svg',
@@ -429,10 +468,6 @@ class _DashboardBodyState extends State<_DashboardBody> {
       isScrollControlled: true,
       builder: (sheetContext) {
         void close() => Navigator.of(sheetContext).pop();
-        void toastLater(String message) {
-          close();
-          _toast(message);
-        }
         void pushLater(String path) {
           close();
           context.push(path);
@@ -448,24 +483,6 @@ class _DashboardBodyState extends State<_DashboardBody> {
                   label: 'Calendar',
                   accent: AppColors.heroStart,
                   onTap: () => pushLater('/calendar'),
-                ),
-                _MoreMenuEntry(
-                  svgAsset: 'assets/icons/illustrations/presentation.svg',
-                  label: 'Meetings',
-                  accent: AppColors.heroStart,
-                  onTap: () => toastLater('Fitur Meetings akan segera hadir'),
-                ),
-                _MoreMenuEntry(
-                  svgAsset: 'assets/icons/illustrations/web.svg',
-                  label: 'Global Search',
-                  accent: AppColors.heroStart,
-                  onTap: () => toastLater('Fitur Global Search akan segera hadir'),
-                ),
-                _MoreMenuEntry(
-                  svgAsset: 'assets/icons/illustrations/productive.svg',
-                  label: 'Aktivitas Kerja',
-                  accent: AppColors.heroStart,
-                  onTap: () => toastLater('Fitur Aktivitas Kerja akan segera hadir'),
                 ),
                 _MoreMenuEntry(
                   svgAsset: 'assets/icons/illustrations/notes.svg',
@@ -484,12 +501,6 @@ class _DashboardBodyState extends State<_DashboardBody> {
                   label: 'Bug Tickets',
                   accent: AppColors.heroStart,
                   onTap: () => pushLater('/tickets'),
-                ),
-                _MoreMenuEntry(
-                  svgAsset: 'assets/icons/illustrations/revenue.svg',
-                  label: 'Invoices',
-                  accent: AppColors.heroStart,
-                  onTap: () => toastLater('Fitur Invoices akan segera hadir'),
                 ),
                 _MoreMenuEntry(
                   svgAsset: 'assets/icons/illustrations/pie_chart.svg',
@@ -528,7 +539,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
             offset: const Offset(0, -34),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _buildStatsCard(context),
+              child: _buildAttendanceCard(),
             ),
           ),
           Transform.translate(
@@ -539,25 +550,17 @@ class _DashboardBodyState extends State<_DashboardBody> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildMenuGrid(),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildAiAssistantPromo(),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildAchievementBanner(context),
-                  if (_showStreakCard) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    _buildStreakCard(),
-                  ],
-                  if (_showRatingCard) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    _buildRatingCard(),
+                  if (_priorities.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildSectionHeader('Tenggat terdekat'),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildPriorityRow(),
                   ],
                   const SizedBox(height: AppSpacing.lg),
-                  _buildSectionHeader('Prioritas minggu ini'),
+                  const _SectionTitle('Tugas terbaru'),
                   const SizedBox(height: AppSpacing.sm),
-                  _buildPriorityRow(),
-                  const SizedBox(height: AppSpacing.lg),
-                  const _SectionTitle('Aktivitas terbaru'),
-                  const SizedBox(height: AppSpacing.sm),
+                  if (_activity.isEmpty)
+                    const Text('Belum ada tugas.', style: TextStyle(fontSize: 13, color: AppColors.grey700)),
                   ..._activity.map(
                     (a) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -603,94 +606,51 @@ class _DashboardBodyState extends State<_DashboardBody> {
     );
   }
 
+  String get _firstName {
+    final name = AuthRepository.instance.currentUser?.name.trim() ?? '';
+    return name.isEmpty ? '' : name.split(' ').first;
+  }
+
   Widget _buildSearchRow(BuildContext context) {
+    final now = DateTime.now();
+    final h = now.hour;
+    final salam = h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+    final initial = _firstName.isEmpty ? '?' : _firstName.characters.first.toUpperCase();
     return Row(
       children: [
         Expanded(
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.search, color: AppColors.grey400, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Cari proyek, tugas...',
-                  style: TextStyle(color: AppColors.grey400, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        GestureDetector(
-          onTap: () => _toast('Fitur Flovig PRO akan segera hadir'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD54F),
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.star_rounded, color: Color(0xFF8D6E00), size: 16),
-                SizedBox(width: 3),
-                Text(
-                  'Upgrade\nPRO',
-                  style: TextStyle(
-                    color: Color(0xFF8D6E00),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        GestureDetector(
-          onTap: () => _toast('Buka tab Profil di bawah untuk lihat akun kamu'),
-          child: Stack(
-            clipBehavior: Clip.none,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Text(
-                  'P',
-                  style: TextStyle(
-                    color: AppColors.heroStart,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
+              Text(
+                _firstName.isEmpty ? salam : '$salam, $_firstName',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
               ),
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '3',
-                      style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ),
+              const SizedBox(height: 2),
+              Text(
+                longDay(now),
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
               ),
             ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Semantics(
+          button: true,
+          label: 'Buka profil',
+          child: InkResponse(
+            onTap: widget.onOpenProfile,
+            radius: 28,
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.white,
+              child: Text(
+                initial,
+                style: const TextStyle(color: AppColors.primary700, fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+            ),
           ),
         ),
       ],
@@ -713,7 +673,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
               SizedBox(width: 4),
               Text(
                 'Proyek Favorit',
-                style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -836,7 +796,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
                       ),
                       child: Text(
                         (p['category'] as String).toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1),
+                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1),
                       ),
                     ),
                   ],
@@ -861,7 +821,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
                 const SizedBox(height: 6),
                 Text(
                   '${p['done']}/${p['total']} tugas · ${(progress * 100).round()}%',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 11),
+                  style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -871,195 +831,128 @@ class _DashboardBodyState extends State<_DashboardBody> {
     );
   }
 
-  /// Kartu promo AI Asisten, pindahan dari posisi kartu Laporan Otomatis
-  /// lama — sekarang ditaruh dekat banner pencapaian di bagian bawah.
-  Widget _buildAiAssistantPromo() {
-    return GestureDetector(
-      onTap: () => _toast('Fitur AI Asisten akan segera hadir'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.md),
+  Future<void> _submitAttendance() async {
+    setState(() => _submitting = true);
+    try {
+      final message = await _attendance.submit();
+      if (mounted) phToast(context, message);
+    } catch (e) {
+      if (mounted) phToast(context, '$e');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  static String _hm(String? v) => (v == null || v.length < 5) ? '--:--' : v.substring(0, 5);
+
+  /// Kartu absen hari ini, mengambang di bawah header.
+  Widget _buildAttendanceCard() {
+    final today = _attendance.today;
+    String title;
+    String subtitle;
+    String? action;
+
+    if (today == null) {
+      title = _attendance.loading ? 'Memuat absensi…' : 'Absensi belum bisa dimuat';
+      subtitle = _attendance.loading ? 'Sebentar ya' : (_attendance.error ?? 'Coba lagi beberapa saat');
+      if (!_attendance.loading) action = 'Coba lagi';
+    } else {
+      final rec = today.attendance;
+      final shift = today.shift?.label ?? '';
+      final shiftText = shift.isEmpty ? '' : 'Shift $shift';
+      switch (today.state) {
+        case 'day_off':
+          title = 'Hari ini libur';
+          subtitle = today.holiday.isNotEmpty ? today.holiday : 'Tidak ada jadwal shift';
+        case 'checkout_1' || 'checkout_2':
+          title = 'Masuk pukul ${_hm(today.state == 'checkout_2' ? rec?.checkIn2 : rec?.checkIn)}';
+          subtitle = shiftText.isEmpty ? 'Jangan lupa absen pulang' : shiftText;
+          action = 'Absen pulang';
+        case 'done':
+          final out = (rec?.checkOut2.isNotEmpty ?? false) ? rec!.checkOut2 : rec?.checkOut;
+          title = 'Absen hari ini selesai';
+          subtitle = '${_hm(rec?.checkIn)} – ${_hm(out)}';
+        default:
+          title = 'Belum absen masuk';
+          subtitle = shiftText.isEmpty ? 'Absen sekarang untuk mulai bekerja' : shiftText;
+          action = 'Absen masuk';
+      }
+    }
+
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(AppRadius.large),
+      elevation: 0,
+      child: Ink(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF6D5DF6), Color(0xFF35C2E8)],
-          ),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6D5DF6).withValues(alpha: 0.3),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadius.large),
+          boxShadow: AppShadows.card,
         ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-              right: -16,
-              top: -16,
-              child: Opacity(
-                opacity: 0.16,
-                child: Icon(Icons.auto_awesome_rounded, size: 96, color: Colors.white),
-              ),
-            ),
-            Row(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.large),
+          onTap: () => context.push('/attendance'),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
               children: [
                 Container(
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppColors.heroStart.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.smart_toy_rounded, color: Colors.white, size: 22),
+                  child: const AppIcon(AppIconType.fingerprint, color: AppColors.primary700, size: 22),
                 ),
-                const SizedBox(width: AppSpacing.sm + 2),
+                const SizedBox(width: AppSpacing.sm + 4),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(AppRadius.small),
-                        ),
-                        child: const Text(
-                          'BARU',
-                          style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'AI Asisten Flovig',
-                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.grey900),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        'Tanya status proyek, minta draft laporan, kelola tugas — cukup ngobrol.',
-                        style: TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: AppColors.grey700),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Kartu statistik mengambang di atas banner, meniru kartu saldo pada
-  /// referensi super-app.
-  Widget _buildStatsCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppRadius.large),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.heroStart.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const AppIcon(AppIconType.folder, color: AppColors.heroStart, size: 19),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '12 Proyek',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.grey900),
-                ),
-                Text(
-                  'sedang berjalan',
-                  style: TextStyle(fontSize: 11, color: AppColors.grey500),
-                ),
-              ],
-            ),
-          ),
-          _statAction(
-            icon: Icons.add_rounded,
-            label: 'Tambah',
-            onTap: () => context.push('/projects'),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _statAction(
-            icon: Icons.history_rounded,
-            label: 'Riwayat',
-            onTap: () => _toast('Riwayat aktivitas akan segera hadir'),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          _statAction(
-            icon: Icons.grid_view_rounded,
-            label: 'Lainnya',
-            badge: '8',
-            onTap: _openMoreMenu,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statAction({
-    required IconData icon,
-    required String label,
-    String? badge,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.accent400,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: Colors.white, size: 17),
-              ),
-              if (badge != null)
-                Positioned(
-                  right: -5,
-                  top: -5,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: AppColors.error,
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                      border: Border.all(color: Colors.white, width: 1.2),
+                if (action != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton(
+                    onPressed: _submitting
+                        ? null
+                        : today == null
+                            ? _attendance.loadToday
+                            : _submitAttendance,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary700,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
                     ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700),
-                    ),
+                    child: _submitting
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text(action, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   ),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 9.5, color: AppColors.grey700, fontWeight: FontWeight.w600)),
-        ],
+        ),
       ),
     );
   }
@@ -1081,6 +974,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
           mainAxisExtent: 78,
         ),
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _menuItems.length,
         itemBuilder: (context, i) => _buildMenuTile(_menuItems[i]),
@@ -1119,7 +1013,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
                     ),
                     child: Text(
                       item.badge!,
-                      style: const TextStyle(color: Colors.white, fontSize: 7.5, fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -1129,161 +1023,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
           Text(
             item.label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10.5, color: AppColors.grey700, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Banner hijau ala "Lihat keuntungan PLUS" pada referensi, di sini
-  /// dipakai untuk mempromosikan pencapaian/produktivitas.
-  Widget _buildAchievementBanner(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _toast('Halaman pencapaian akan segera hadir'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2, horizontal: AppSpacing.md),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.success, Color(0xFF7CB342)],
-          ),
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          boxShadow: [
-            BoxShadow(color: AppColors.success.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 6)),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.emoji_events_rounded, color: Colors.white, size: 16),
-            SizedBox(width: 8),
-            Text(
-              'Selesaikan tugas, dapat pencapaian',
-              style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Kartu progres mingguan (mirip kartu klaim hadiah 1/7 hari pada
-  /// referensi), dipakai untuk streak produktivitas.
-  Widget _buildStreakCard() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.primary50,
-        borderRadius: BorderRadius.circular(AppRadius.large),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Streak produktif kamu!',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.grey900),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary600,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 13),
-                          SizedBox(width: 3),
-                          Text('5/7 Hari', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Pertahankan sampai akhir minggu',
-                      style: TextStyle(fontSize: 10.5, color: AppColors.grey700),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.card_giftcard_rounded, color: AppColors.primary600, size: 20),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _showStreakCard = false),
-            child: const Padding(
-              padding: EdgeInsets.only(left: 6),
-              child: Icon(Icons.close_rounded, color: AppColors.grey400, size: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Kartu ajakan rating rekan kerja, meniru kartu "Kasih driver rating,
-  /// yuk!" pada referensi.
-  Widget _buildRatingCard() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppRadius.large),
-        boxShadow: AppShadows.card,
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.grey100,
-            child: AppIcon(AppIconType.person, color: AppColors.grey500, size: 20),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Beri rating ke rekan kerja',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.grey900),
-                ),
-                const Text(
-                  'Sarah · Backend API v2',
-                  style: TextStyle(fontSize: 10.5, color: AppColors.grey500),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: List.generate(5, (i) {
-                    final filled = i < _ratingStars;
-                    return GestureDetector(
-                      onTap: () => setState(() => _ratingStars = i + 1),
-                      child: Icon(
-                        filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                        color: filled ? const Color(0xFFFFB300) : AppColors.grey400,
-                        size: 20,
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _showRatingCard = false),
-            child: const Icon(Icons.close_rounded, color: AppColors.grey400, size: 16),
+            style: const TextStyle(fontSize: 12, color: AppColors.grey900, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -1295,14 +1035,14 @@ class _DashboardBodyState extends State<_DashboardBody> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _SectionTitle(title),
-        GestureDetector(
-          onTap: () {},
+        TextButton(
+          onPressed: () => context.push('/projects'),
           child: const Text(
             'Lihat semua',
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.heroStart,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary700,
             ),
           ),
         ),
@@ -1311,12 +1051,13 @@ class _DashboardBodyState extends State<_DashboardBody> {
   }
 
   Widget _buildPriorityRow() {
+    final items = _priorities;
     return Row(
-      children: _priorities.map((p) {
+      children: [for (var i = 0; i < items.length; i++) items[i]].map((p) {
         return Expanded(
           child: Container(
             margin: EdgeInsets.only(
-              right: p == _priorities.first ? AppSpacing.sm : 0,
+              right: identical(p, items.first) && items.length > 1 ? AppSpacing.sm : 0,
             ),
             padding: const EdgeInsets.all(AppSpacing.sm + 4),
             decoration: BoxDecoration(
@@ -1331,8 +1072,10 @@ class _DashboardBodyState extends State<_DashboardBody> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   p['title'] as String,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.grey900,
                   ),
@@ -1341,17 +1084,17 @@ class _DashboardBodyState extends State<_DashboardBody> {
                 Text(
                   p['meta'] as String,
                   style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.grey500,
+                    fontSize: 12,
+                    color: AppColors.grey700,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   p['progress'] as String,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.heroStart,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary700,
                   ),
                 ),
               ],
@@ -1445,9 +1188,9 @@ class _MoreMenuSheet extends StatelessWidget {
                         child: Text(
                           section.title.toUpperCase(),
                           style: const TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.grey400,
+                            color: AppColors.grey700,
                             letterSpacing: 0.6,
                           ),
                         ),
@@ -1492,7 +1235,7 @@ class _MoreMenuTile extends StatelessWidget {
             Expanded(
               child: Text(
                 entry.label,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.grey900),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.grey900),
               ),
             ),
             const Icon(Icons.chevron_right_rounded, color: AppColors.grey400, size: 18),
@@ -1511,7 +1254,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14),
+      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.grey900),
     );
   }
 }
@@ -1523,8 +1266,9 @@ class _ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = activity['done'] == true;
-    final color = done ? AppColors.success : AppColors.error;
-    final bg = done ? AppColors.successBg : AppColors.errorBg;
+    final late = activity['late'] == true;
+    final color = done ? const Color(0xFF2E7D32) : late ? const Color(0xFFC62828) : AppColors.primary700;
+    final bg = done ? AppColors.successBg : late ? AppColors.errorBg : AppColors.primary50;
     final icon = done ? 'assets/icons/illustrations/checklist.svg' : 'assets/icons/illustrations/deadline.svg';
 
     return Container(
@@ -1550,7 +1294,7 @@ class _ActivityTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.grey900,
                   ),
@@ -1558,8 +1302,8 @@ class _ActivityTile extends StatelessWidget {
                 Text(
                   activity['date'] as String,
                   style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.grey500,
+                    fontSize: 12,
+                    color: AppColors.grey700,
                   ),
                 ),
               ],
@@ -1572,9 +1316,9 @@ class _ActivityTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Text(
-              done ? 'Selesai' : 'Terlambat',
+              done ? 'Selesai' : late ? 'Terlambat' : 'Berjalan',
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
