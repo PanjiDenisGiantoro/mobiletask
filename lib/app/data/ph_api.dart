@@ -28,10 +28,10 @@ class PhApi {
   PhApi._();
   static final PhApi instance = PhApi._();
 
-  Map<String, String> get _headers => {
+  Map<String, String> _headers(String? token) => {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        if (AuthRepository.instance.token != null) 'Authorization': 'Bearer ${AuthRepository.instance.token}',
+        if (token != null) 'Authorization': 'Bearer $token',
       };
 
   Future<dynamic> get(String path) => _send('GET', path);
@@ -43,8 +43,9 @@ class PhApi {
   /// POST multipart untuk unggah file. [fields] dikirim sebagai teks; nilai
   /// List dikirim sebagai `key[]` (format array Laravel), bool sebagai 1/0.
   Future<dynamic> upload(String path, Map<String, Object?> fields, List<ApiFile> files) async {
+    final token = AuthRepository.instance.token;
     final req = http.MultipartRequest('POST', Uri.parse('$kApiBaseUrl$path'))
-      ..headers.addAll({..._headers}..remove('Content-Type'));
+      ..headers.addAll(_headers(token)..remove('Content-Type'));
     fields.forEach((k, v) {
       if (v == null) return;
       if (v is List) {
@@ -66,7 +67,7 @@ class PhApi {
     } catch (_) {
       throw const ApiException('Tidak dapat terhubung ke server');
     }
-    return _handle(res);
+    return _handle(res, token);
   }
 
   /// Mengambil semua halaman dari endpoint Laravel `paginate()`.
@@ -87,9 +88,10 @@ class PhApi {
 
   Future<dynamic> _send(String method, String path, [Map<String, Object?>? body]) async {
     final uri = Uri.parse('$kApiBaseUrl$path');
+    final token = AuthRepository.instance.token;
     final http.Response res;
     try {
-      final req = http.Request(method, uri)..headers.addAll(_headers);
+      final req = http.Request(method, uri)..headers.addAll(_headers(token));
       if (body != null) req.body = jsonEncode(body);
       res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 20)));
     } on TimeoutException {
@@ -97,10 +99,10 @@ class PhApi {
     } catch (_) {
       throw const ApiException('Tidak dapat terhubung ke server');
     }
-    return _handle(res);
+    return _handle(res, token);
   }
 
-  dynamic _handle(http.Response res) {
+  dynamic _handle(http.Response res, String? token) {
     dynamic decoded;
     try {
       decoded = res.body.isEmpty ? null : jsonDecode(res.body);
@@ -109,6 +111,7 @@ class PhApi {
     }
     if (res.statusCode >= 200 && res.statusCode < 300) return decoded;
 
+    if (res.statusCode == 401) unawaited(AuthRepository.instance.handleUnauthorized(token));
     final msg = decoded is Map ? _errorMessage(decoded) : null;
     throw ApiException(
       switch (res.statusCode) {

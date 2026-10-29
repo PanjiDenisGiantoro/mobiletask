@@ -37,9 +37,13 @@ class AuthUser {
   }
 }
 
-/// Sesi login ke flovig.com via endpoint Sanctum `/auth/login`, `/auth/me`,
-/// `/auth/logout`. Token disimpan di secure storage (Keychain/Keystore)
-/// supaya sesi bertahan setelah aplikasi ditutup.
+/// Sesi login ke flovig.com via endpoint Sanctum `/auth/login`,
+/// `/auth/refresh`, `/auth/logout`. Token disimpan di secure storage
+/// (Keychain/Keystore) supaya sesi bertahan setelah aplikasi ditutup.
+///
+/// Token kedaluwarsa 30 hari setelah terakhir diperpanjang; setiap aplikasi
+/// dibuka [restoreSession] memperpanjangnya, jadi hanya akun yang lama tidak
+/// membuka aplikasi yang harus login ulang.
 class AuthRepository {
   AuthRepository._();
   static final AuthRepository instance = AuthRepository._();
@@ -54,6 +58,10 @@ class AuthRepository {
   String? get token => _token;
   AuthUser? get currentUser => _user;
   bool get isLoggedIn => _token != null;
+
+  /// Dipanggil sekali saat server menolak token sesi aktif (kedaluwarsa atau
+  /// dicabut), setelah sesi lokal dihapus. Dipasang di `main.dart`.
+  void Function()? onSessionExpired;
 
   Map<String, String> get _headers => {
         'Accept': 'application/json',
@@ -97,9 +105,9 @@ class AuthRepository {
     throw AuthException('${body['message'] ?? 'Login gagal (${res.statusCode})'}');
   }
 
-  /// Memulihkan sesi tersimpan saat aplikasi dibuka. Token divalidasi ke
-  /// `/auth/me`; kalau server menolak (401) sesi dihapus, kalau server tidak
-  /// terjangkau sesi tersimpan tetap dipakai.
+  /// Memulihkan sesi tersimpan saat aplikasi dibuka. Token divalidasi dan
+  /// diperpanjang lewat `/auth/refresh`; kalau server menolak (401) sesi
+  /// dihapus, kalau server tidak terjangkau sesi tersimpan tetap dipakai.
   Future<bool> restoreSession() async {
     try {
       _token = await _storage.read(key: _tokenKey);
@@ -112,10 +120,10 @@ class AuthRepository {
 
     try {
       final res = await http
-          .get(Uri.parse('$kApiBaseUrl/auth/me'), headers: _headers)
+          .post(Uri.parse('$kApiBaseUrl/auth/refresh'), headers: _headers)
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
-        final userJson = _decode(res.body);
+        final userJson = _decode(res.body)['user'] as Map<String, dynamic>;
         _user = AuthUser.fromJson(userJson);
         await _persist(userJson);
       } else if (res.statusCode == 401) {
@@ -142,6 +150,15 @@ class AuthRepository {
         )
         .timeout(const Duration(seconds: 10))
         .then((_) {}, onError: (_) {}));
+  }
+
+  /// Respons 401 untuk request yang dikirim dengan [sentToken]. Diabaikan
+  /// kalau sesi sudah berganti (mis. request lama selesai setelah login ulang)
+  /// atau sudah ditangani oleh 401 lain yang datang bersamaan.
+  Future<void> handleUnauthorized(String? sentToken) async {
+    if (sentToken == null || sentToken != _token) return;
+    await _clearSession();
+    onSessionExpired?.call();
   }
 
   /// Gagal simpan (mis. web tanpa HTTPS, Web Crypto tidak tersedia) tidak

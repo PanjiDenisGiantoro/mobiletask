@@ -28,10 +28,15 @@ Future<void> confirmSignOut(BuildContext context) async {
   if (ok != true || !context.mounted) return;
 
   await AuthRepository.instance.logout();
+  clearAccountData();
+  if (context.mounted) context.go('/welcome');
+}
+
+/// Mengosongkan semua cache data server milik akun yang baru keluar.
+void clearAccountData() {
   PhStore.instance.clearRemote();
   ShiftRepository.instance.clear();
   TaskRepository.instance.replaceAll(const []);
   AttendanceRepository.instance.clear();
   ChatRepository.instance.clear();
-  if (context.mounted) context.go('/welcome');
 }
