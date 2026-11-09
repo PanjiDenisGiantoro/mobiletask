@@ -87,6 +87,7 @@ flutter:
 
   assets:
     - assets/images/flovig_logo.png
+    - assets/images/runa.png
     - assets/icons/
     - assets/icons/illustrations/
     - assets/lottie/

@@ -8,7 +8,6 @@ import 'projects_screen.dart';
 import 'tasks_screen.dart';
 import 'profile_screen.dart';
 import 'hris_screens.dart';
-import '../data/attendance_repository.dart';
 import '../data/auth_repository.dart';
 import '../data/chat_remote.dart';
 import '../utils/ph_format.dart';
@@ -17,8 +16,8 @@ import '../data/ph_remote.dart';
 import '../data/ph_store.dart';
 import '../data/task_repository.dart';
 import 'ph_screens.dart';
+import '../widgets/ai_assistant_button.dart';
 import '../widgets/app_icons.dart';
-import '../widgets/ph_widgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -78,17 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
           title: 'Aksi Cepat',
           sections: [
             _MoreMenuSection(
-              title: 'Kehadiran',
-              entries: [
-                _MoreMenuEntry(
-                  svgAsset: 'assets/icons/illustrations/to_do.svg',
-                  label: 'Absen Masuk/Keluar',
-                  accent: AppColors.error,
-                  onTap: () => pushLater('/attendance'),
-                ),
-              ],
-            ),
-            _MoreMenuSection(
               title: 'Pengajuan',
               entries: [
                 _MoreMenuEntry(
@@ -122,7 +110,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       extendBody: true,
       backgroundColor: AppColors.bg,
-      body: IndexedStack(index: _selectedNav, children: _screens),
+      body: Stack(
+        children: [
+          IndexedStack(index: _selectedNav, children: _screens),
+          Positioned(
+            right: 16,
+            bottom: 96 + MediaQuery.of(context).padding.bottom,
+            child: const AiAssistantButton(),
+          ),
+        ],
+      ),
       bottomNavigationBar: _FloatingNavBar(
         mode: _mode,
         selectedIndex: _selectedNav,
@@ -296,8 +293,6 @@ class _DashboardBody extends StatefulWidget {
 }
 
 class _DashboardBodyState extends State<_DashboardBody> {
-  final _attendance = AttendanceRepository.instance;
-  bool _submitting = false;
 
   late final PageController _favProjectsController;
   late int _favProjectsPage;
@@ -339,10 +334,8 @@ class _DashboardBodyState extends State<_DashboardBody> {
     PhStore.instance.addListener(_onStoreChanged);
     TaskRepository.instance.addListener(_onStoreChanged);
     ChatRepository.instance.addListener(_onStoreChanged);
-    _attendance.addListener(_onStoreChanged);
     if (!PhStore.instance.synced) PhStore.instance.sync();
     ChatRepository.instance.loadInbox();
-    if (_attendance.today == null) _attendance.loadToday();
     // Rentang halaman besar & semu-tak-terbatas supaya carousel bisa digeser
     // terus ke kiri maupun kanan. 4992 habis dibagi 1–4 (jumlah proyek
     // favorit yang mungkin), jadi halaman awal selalu proyek pertama.
@@ -359,7 +352,6 @@ class _DashboardBodyState extends State<_DashboardBody> {
     PhStore.instance.removeListener(_onStoreChanged);
     TaskRepository.instance.removeListener(_onStoreChanged);
     ChatRepository.instance.removeListener(_onStoreChanged);
-    _attendance.removeListener(_onStoreChanged);
     _favProjectsController.dispose();
     super.dispose();
   }
@@ -539,7 +531,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
             offset: const Offset(0, -34),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _buildAttendanceCard(),
+              child: _buildFocusCard(),
             ),
           ),
           Transform.translate(
@@ -831,52 +823,51 @@ class _DashboardBodyState extends State<_DashboardBody> {
     );
   }
 
-  Future<void> _submitAttendance() async {
-    setState(() => _submitting = true);
-    try {
-      final message = await _attendance.submit();
-      if (mounted) phToast(context, message);
-    } catch (e) {
-      if (mounted) phToast(context, '$e');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
+  /// Tugas terbuka milik user dengan tenggat paling dekat (yang terlambat duluan).
+  TaskEntry? get _focusTask {
+    final me = PhStore.meId;
+    final open = TaskRepository.instance.tasks.where((t) => !t.done && t.assignedTo == me).toList()
+      ..sort((a, b) {
+        if (a.dueDate.isEmpty != b.dueDate.isEmpty) return a.dueDate.isEmpty ? 1 : -1;
+        return a.dueDate.compareTo(b.dueDate);
+      });
+    return open.isEmpty ? null : open.first;
   }
 
-  static String _hm(String? v) => (v == null || v.length < 5) ? '--:--' : v.substring(0, 5);
+  static String _dueText(String due) {
+    if (due.isEmpty) return 'Tanpa tenggat';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final d = DateTime.tryParse(due);
+    if (d == null) return 'Tenggat $due';
+    final diff = DateTime(d.year, d.month, d.day).difference(today).inDays;
+    if (diff < 0) return 'Terlambat ${-diff} hari';
+    if (diff == 0) return 'Tenggat hari ini';
+    if (diff == 1) return 'Tenggat besok';
+    return 'Tenggat ${fmtDate(due)}';
+  }
 
-  /// Kartu absen hari ini, mengambang di bawah header.
-  Widget _buildAttendanceCard() {
-    final today = _attendance.today;
-    String title;
-    String subtitle;
-    String? action;
+  /// Kartu fokus hari ini: satu tugas paling mendesak, mengambang di bawah header.
+  Widget _buildFocusCard() {
+    final task = _focusTask;
+    final String title;
+    final String subtitle;
+    final String action;
+    final VoidCallback onAction;
+    bool late = false;
 
-    if (today == null) {
-      title = _attendance.loading ? 'Memuat absensi…' : 'Absensi belum bisa dimuat';
-      subtitle = _attendance.loading ? 'Sebentar ya' : (_attendance.error ?? 'Coba lagi beberapa saat');
-      if (!_attendance.loading) action = 'Coba lagi';
+    if (task == null) {
+      title = 'Semua tugas beres';
+      subtitle = 'Tidak ada tugas terbuka untukmu';
+      action = 'Lihat proyek';
+      onAction = () => context.push('/projects');
     } else {
-      final rec = today.attendance;
-      final shift = today.shift?.label ?? '';
-      final shiftText = shift.isEmpty ? '' : 'Shift $shift';
-      switch (today.state) {
-        case 'day_off':
-          title = 'Hari ini libur';
-          subtitle = today.holiday.isNotEmpty ? today.holiday : 'Tidak ada jadwal shift';
-        case 'checkout_1' || 'checkout_2':
-          title = 'Masuk pukul ${_hm(today.state == 'checkout_2' ? rec?.checkIn2 : rec?.checkIn)}';
-          subtitle = shiftText.isEmpty ? 'Jangan lupa absen pulang' : shiftText;
-          action = 'Absen pulang';
-        case 'done':
-          final out = (rec?.checkOut2.isNotEmpty ?? false) ? rec!.checkOut2 : rec?.checkOut;
-          title = 'Absen hari ini selesai';
-          subtitle = '${_hm(rec?.checkIn)} – ${_hm(out)}';
-        default:
-          title = 'Belum absen masuk';
-          subtitle = shiftText.isEmpty ? 'Absen sekarang untuk mulai bekerja' : shiftText;
-          action = 'Absen masuk';
-      }
+      final due = _dueText(task.dueDate);
+      late = due.startsWith('Terlambat');
+      title = task.title;
+      subtitle = task.project.isEmpty ? due : '${task.project} · $due';
+      action = 'Buka';
+      onAction = task.id == 0 ? () => context.push('/tasks') : () => context.push('/task/${task.id}');
     }
 
     return Material(
@@ -891,7 +882,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.large),
-          onTap: () => context.push('/attendance'),
+          onTap: () => context.push('/tasks'),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
@@ -903,7 +894,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
                     color: AppColors.heroStart.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const AppIcon(AppIconType.fingerprint, color: AppColors.primary700, size: 22),
+                  child: AppIcon(task == null ? AppIconType.check : AppIconType.tasks, color: AppColors.primary700, size: 22),
                 ),
                 const SizedBox(width: AppSpacing.sm + 4),
                 Expanded(
@@ -921,34 +912,23 @@ class _DashboardBodyState extends State<_DashboardBody> {
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, color: AppColors.grey700),
+                        style: TextStyle(fontSize: 13, color: late ? AppColors.error : AppColors.grey700),
                       ),
                     ],
                   ),
                 ),
-                if (action != null) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  FilledButton(
-                    onPressed: _submitting
-                        ? null
-                        : today == null
-                            ? _attendance.loadToday
-                            : _submitAttendance,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary700,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 44),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
-                    ),
-                    child: _submitting
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : Text(action, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(width: AppSpacing.sm),
+                FilledButton(
+                  onPressed: onAction,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary700,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
                   ),
-                ],
+                  child: Text(action, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                ),
               ],
             ),
           ),
