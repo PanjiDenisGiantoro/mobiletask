@@ -37,8 +37,10 @@ extension PhRemote on PhStore {
           _api.get('/projects/$id/milestones'),
           _api.getAll('/projects/$id/tasks'),
           _api.getAll('/projects/$id/tickets').catchError((_) => <Map<String, dynamic>>[]),
+          _api.get('/projects/$id/sprints').catchError((_) => const <dynamic>[]),
         ]);
         p.milestones.addAll([for (final m in (results[0] as List? ?? const [])) _milestone(m as Map<String, dynamic>)]);
+        p.sprints.addAll([for (final s in (results[3] as List? ?? const [])) _sprint(s as Map<String, dynamic>)]);
         final tasks = [for (final t in results[1] as List<Map<String, dynamic>>) _task(t, p)];
         p.totalTasks = tasks.length;
         p.doneTasks = tasks.where((t) => t.done).length;
@@ -109,7 +111,8 @@ extension PhRemote on PhStore {
         ..budget = fresh.budget
         ..budgetThreshold = fresh.budgetThreshold
         ..githubUrl = fresh.githubUrl
-        ..category = fresh.category;
+        ..category = fresh.category
+        ..images = fresh.images;
     }
     changed();
   }
@@ -220,11 +223,47 @@ extension PhRemote on PhStore {
       _api.get('/projects/${p.id}/risks'),
       _api.get('/projects/${p.id}/files'),
       _api.get('/projects/${p.id}/timesheet'),
+      _api.getAll('/projects/${p.id}/knowledge-base').catchError((_) => <Map<String, dynamic>>[]),
+      _api.get('/projects/${p.id}/team').catchError((_) => null),
+      _api.getAll('/projects/${p.id}/tickets').catchError((_) => <Map<String, dynamic>>[]),
+      _loadUsers(),
     ]);
     final fresh = _project(r[0] as Map<String, dynamic>);
+    if (fresh.images.isNotEmpty) p.images = fresh.images;
+    final teamRes = r[7];
+    final teamList = teamRes is List
+        ? teamRes
+        : (teamRes is Map ? (teamRes['members'] ?? teamRes['team'] ?? teamRes['data']) : null);
+    final mergedMembers = <ProjectMember>[...fresh.members];
+    if (teamList is List) {
+      for (final raw in teamList.whereType<Map<String, dynamic>>()) {
+        final tm = _member(raw);
+        final idx = mergedMembers.indexWhere((e) => e.userId == tm.userId || (e.id != 0 && e.id == tm.id));
+        if (idx >= 0) {
+          if (mergedMembers[idx].photoUrl.isEmpty && tm.photoUrl.isNotEmpty) {
+            mergedMembers[idx].photoUrl = tm.photoUrl;
+          }
+          if (mergedMembers[idx].images.isEmpty && tm.images.isNotEmpty) {
+            mergedMembers[idx].images = tm.images;
+          }
+          if (mergedMembers[idx].role.isEmpty && tm.role.isNotEmpty) {
+            mergedMembers[idx].role = tm.role;
+          }
+        } else {
+          mergedMembers.add(tm);
+        }
+      }
+    }
+    for (final m in mergedMembers) {
+      final u = users[m.userId];
+      if (u != null) {
+        if (m.photoUrl.isEmpty && u.photoUrl.isNotEmpty) m.photoUrl = u.photoUrl;
+        if (m.images.isEmpty && u.images.isNotEmpty) m.images = u.images;
+      }
+    }
     p.members
       ..clear()
-      ..addAll(fresh.members);
+      ..addAll(mergedMembers);
     p.milestones
       ..clear()
       ..addAll([for (final m in (r[0]['milestones'] as List? ?? const [])) _milestone(m as Map<String, dynamic>)]);
@@ -239,6 +278,19 @@ extension PhRemote on PhStore {
       ..clear()
       ..addAll([for (final j in (r[4] as List)) _file(j as Map<String, dynamic>)]);
     _applyTimesheet(p, r[5] as Map<String, dynamic>);
+    p.kbDocuments
+      ..clear()
+      ..addAll([for (final j in (r[6] as List)) _kbDocument(j as Map<String, dynamic>)]);
+    final rawTickets = (r[8] as List).isNotEmpty
+        ? (r[8] as List)
+        : ((r[0] is Map ? (r[0]['tickets'] ?? r[0]['bug_tickets']) : null) as List? ?? const []);
+    final projTickets = [for (final j in rawTickets.whereType<Map<String, dynamic>>()) _ticket(j, p)];
+    if (projTickets.isNotEmpty || (r[8] as List).isNotEmpty) {
+      tickets
+        ..removeWhere((t) => t.projectId == p.id || t.projectName == p.name)
+        ..addAll(projTickets)
+        ..sort((a, b) => b.id.compareTo(a.id));
+    }
     changed();
   }
 
@@ -287,8 +339,7 @@ extension PhRemote on PhStore {
     p.members
       ..clear()
       ..addAll([
-        for (final m in list)
-          ProjectMember(id: _int(m['id']), userId: _uid(m['user_id'], m['user_name']), role: '${m['role'] ?? ''}', maxHoursPerDay: _int(m['max_hours_per_day'], 8)),
+        for (final m in list.whereType<Map<String, dynamic>>()) _member(m),
       ]);
     changed();
   }
@@ -359,6 +410,78 @@ extension PhRemote on PhStore {
   Future<void> deleteFile(Project p, ProjectFile f) async {
     await _api.delete('/projects/${p.id}/files/${f.id}');
     p.files.remove(f);
+    changed();
+  }
+
+  /// Tautan (Figma/GitHub/Docs/dsb.) disimpan di koleksi file yang sama
+  /// dengan tipe 'link', tanpa payload file (beda dari [uploadFile]).
+  Future<void> addLink(Project p, String folder, String name, String url, String description) async {
+    final res = await _api.post('/projects/${p.id}/files', {
+      'folder': folder,
+      'name': name,
+      'url': url,
+      'type': 'link',
+      'description': description,
+    });
+    final list = res is List ? res : [res as Map<String, dynamic>];
+    p.files.insertAll(0, [for (final j in list) _file(j as Map<String, dynamic>)]);
+    changed();
+  }
+
+  // ------------------------------------------------------------ knowledge base
+
+  KbDocument _kbDocument(Map<String, dynamic> j) {
+    final attachmentsJson = j['attachments'] ?? j['files'];
+    return KbDocument(
+      id: _int(j['id']),
+      category: '${j['category'] ?? 'brd'}',
+      title: '${j['title'] ?? ''}',
+      summary: '${j['summary'] ?? j['description'] ?? ''}',
+      body: '${j['body'] ?? j['content'] ?? ''}',
+      version: _int(j['version'], 1),
+      authorId: _userId(j['author'] ?? j['user'], j['author_id'] ?? j['user_id']),
+      createdAt: _dateTime(j['created_at']),
+      attachments: [
+        if (attachmentsJson is List)
+          for (final a in attachmentsJson)
+            if (a is Map) KbAttachment(id: _int(a['id']), name: '${a['name'] ?? a['file_name'] ?? ''}', url: '${a['url'] ?? ''}', size: _int(a['size'])),
+      ],
+    );
+  }
+
+  Future<void> saveKbDocument(Project p, KbDocument? existing, Map<String, Object?> v, {ApiFile? attachment}) async {
+    final fields = {
+      'category': v['category'],
+      'title': v['title'],
+      'summary': _nullIfEmpty(v['summary']),
+      'body': _nullIfEmpty(v['body']),
+    };
+    final Map<String, dynamic> res;
+    if (existing == null) {
+      res = (attachment == null
+          ? await _api.post('/projects/${p.id}/knowledge-base', fields)
+          : await _api.upload('/projects/${p.id}/knowledge-base', fields, [ApiFile('attachments[]', attachment.name, attachment.bytes)])) as Map<String, dynamic>;
+      p.kbDocuments.insert(0, _kbDocument(res));
+    } else {
+      res = (attachment == null
+          ? await _api.put('/projects/${p.id}/knowledge-base/${existing.id}', fields)
+          : await _api.upload('/projects/${p.id}/knowledge-base/${existing.id}', fields, [ApiFile('attachments[]', attachment.name, attachment.bytes)])) as Map<String, dynamic>;
+      final fresh = _kbDocument(res);
+      existing
+        ..category = fresh.category
+        ..title = fresh.title
+        ..summary = fresh.summary
+        ..body = fresh.body
+        ..version = fresh.version
+        ..attachments.clear()
+        ..attachments.addAll(fresh.attachments);
+    }
+    changed();
+  }
+
+  Future<void> deleteKbDocument(Project p, KbDocument d) async {
+    await _api.delete('/projects/${p.id}/knowledge-base/${d.id}');
+    p.kbDocuments.remove(d);
     changed();
   }
 
@@ -440,6 +563,8 @@ extension PhRemote on PhStore {
         startDate: '${j['start_date'] ?? ''}',
         endDate: '${j['end_date'] ?? ''}',
         milestone: '${j['milestone'] ?? ''}',
+        leadId: _userId(j['lead'], j['lead_id']),
+        priority: '${j['priority'] ?? ''}',
       );
 
   Risk _risk(Map<String, dynamic> j) => Risk(
@@ -454,15 +579,25 @@ extension PhRemote on PhStore {
         owner: '${j['owner'] ?? ''}',
       );
 
-  ProjectFile _file(Map<String, dynamic> j) => ProjectFile(
-        id: _int(j['id']),
-        url: '${j['url'] ?? ''}',
-        folder: '${j['folder'] ?? 'General'}',
-        name: '${j['name'] ?? ''}',
-        mimeType: '${j['mime_type'] ?? ''}',
-        size: _int(j['size']),
-        description: '${j['description'] ?? ''}',
-      );
+  ProjectFile _file(Map<String, dynamic> j) {
+    final url = '${j['url'] ?? j['link'] ?? ''}';
+    final mime = '${j['mime_type'] ?? ''}';
+    final taskJson = j['task'];
+    return ProjectFile(
+      id: _int(j['id']),
+      url: url,
+      folder: '${j['folder'] ?? 'General'}',
+      name: '${j['name'] ?? j['title'] ?? ''}',
+      mimeType: mime,
+      size: _int(j['size']),
+      description: '${j['description'] ?? ''}',
+      type: '${j['type'] ?? (mime.isEmpty && url.startsWith('http') ? 'link' : 'file')}',
+      taskId: j['task_id'] == null ? '' : '${j['task_id']}',
+      taskTitle: '${j['task_title'] ?? (taskJson is Map ? taskJson['title'] : null) ?? ''}',
+      uploaderId: _userId(j['uploaded_by'] ?? j['user'], j['uploaded_by_id'] ?? j['user_id']),
+      createdAt: _dateTime(j['created_at']),
+    );
+  }
 
   String _uid(Object? id, Object? name) {
     final key = '${id ?? ''}';
@@ -483,12 +618,19 @@ extension PhRemote on PhStore {
         for (final c in (res['comments'] as List? ?? const []))
           TaskComment(_userId(c['user'], c['user_id']), '${c['body'] ?? ''}', _dateTime(c['created_at'])),
       ]);
+    t.commentsCount = t.comments.length;
     t.history
       ..clear()
       ..addAll([
         for (final h in (res['histories'] as List? ?? const []).reversed)
-          TicketHistory(_userId(h['actor'], h['actor_id']), '${h['field_changed'] ?? ''}', '${h['old_value'] ?? '-'}',
-              '${h['new_value'] ?? '-'}', _dateTime(h['created_at'])),
+          TicketHistory(
+            _userId(h['actor'], h['actor_id']),
+            '${h['field_changed'] ?? ''}',
+            '${h['old_value'] ?? '-'}',
+            '${h['new_value'] ?? '-'}',
+            _dateTime(h['created_at']),
+            description: '${h['description'] ?? h['notes'] ?? ''}',
+          ),
       ]);
     t.checklist
       ..clear()
@@ -499,30 +641,83 @@ extension PhRemote on PhStore {
     changed();
   }
 
-  Future<void> saveTicket(Ticket? existing, Map<String, Object?> v) async {
-    final project = projectByName(v['projectName'] as String);
+  Future<void> saveTicket(Ticket? existing, Map<String, Object?> v, {ApiFile? attachment}) async {
+    final project = projectByName('${v['projectName'] ?? ''}');
     if (project == null) throw const ApiException('Pilih proyek');
-    final payload = {
+    final milestoneId = project.milestones.where((m) => m.title == v['milestone']).firstOrNull?.id;
+    final rawAssignees = v['assigneeIds'];
+    final assigneeIds = <int>[
+      if (rawAssignees is List)
+        for (final id in rawAssignees)
+          if (_intOrNull(id) != null) _intOrNull(id)!,
+      if (rawAssignees == null && _intOrNull(v['assigneeId']) != null) _intOrNull(v['assigneeId'])!,
+    ];
+    final primaryAssignee = assigneeIds.firstOrNull ?? _intOrNull(v['assigneeId']);
+    final payload = <String, Object?>{
       'title': v['title'],
       'description': v['description'],
       'type': v['type'],
       'priority': v['priority'],
+      if (v['status'] != null && '${v['status']}'.isNotEmpty) 'status': v['status'],
+      'error_category': _nullIfEmpty(v['errorCategory']),
+      'milestone_id': milestoneId,
+      if (primaryAssignee != null) 'assignee_id': primaryAssignee,
+      if (assigneeIds.isNotEmpty) 'assignee_ids': assigneeIds,
     };
-    final assignee = _intOrNull(v['assigneeId']);
     Ticket t;
     if (existing == null) {
-      final res = await _api.post('/projects/${project.id}/tickets', payload) as Map<String, dynamic>;
+      final res = (attachment == null
+          ? await _api.post('/projects/${project.id}/tickets', payload)
+          : await _api.upload('/projects/${project.id}/tickets', payload, [ApiFile('attachments[]', attachment.name, attachment.bytes)])) as Map<String, dynamic>;
       t = _ticket(res, project);
       tickets.insert(0, t);
     } else {
-      final res = await _api.put('/tickets/${existing.id}', payload) as Map<String, dynamic>;
+      final prevStatus = existing.status;
+      final res = (attachment == null
+          ? await _api.put('/tickets/${existing.id}', payload)
+          : await _api.upload('/tickets/${existing.id}', payload, [ApiFile('attachments[]', attachment.name, attachment.bytes)])) as Map<String, dynamic>;
       _copyTicket(_ticket(res, project), existing);
       t = existing;
+      final newStatus = '${v['status'] ?? ''}'.trim();
+      if (newStatus.isNotEmpty && newStatus != prevStatus && t.status != newStatus) {
+        await setTicketStatus(t, newStatus, 'Status diperbarui melalui Edit Tiket');
+      }
     }
-    if (assignee != null && '$assignee' != t.assigneeId) {
-      final res = await _api.put('/tickets/${t.id}/assign', {'assignee_id': assignee});
+    if (primaryAssignee != null && '$primaryAssignee' != t.assigneeId) {
+      final res = await _api.put('/tickets/${t.id}/assign', {
+        'assignee_id': primaryAssignee,
+        if (assigneeIds.isNotEmpty) 'assignee_ids': assigneeIds,
+      }).catchError((_) => null);
       if (res is Map<String, dynamic>) _copyTicket(_ticket(res, project), t);
     }
+    if (assigneeIds.isNotEmpty) {
+      t.assigneeIds = [for (final id in assigneeIds) '$id'];
+      t.assigneeId = '${assigneeIds.first}';
+    }
+    changed();
+  }
+
+  /// Simpan Kategori Error, Solusi / Catatan Perbaikan Teknis, dan lampiran file dari Detail Tiket.
+  Future<void> saveTicketSolution(Ticket t, {required String errorCategory, required String solution, ApiFile? attachment}) async {
+    final project = t.projectId != 0 ? projectById(t.projectId) : projectByName(t.projectName);
+    final payload = <String, Object?>{
+      'title': t.title,
+      'description': t.description,
+      'type': t.type,
+      'priority': t.priority,
+      'error_category': _nullIfEmpty(errorCategory),
+      'solution': _nullIfEmpty(solution),
+    };
+    final res = attachment == null
+        ? await _api.put('/tickets/${t.id}', payload)
+        : await _api.upload('/tickets/${t.id}', payload, [ApiFile('attachments[]', attachment.name, attachment.bytes)]);
+    if (res is Map<String, dynamic>) {
+      _copyTicket(_ticket(res, project), t);
+    } else {
+      t.errorCategory = errorCategory;
+      t.solution = solution;
+    }
+    await loadTicketDetail(t);
     changed();
   }
 
@@ -547,6 +742,7 @@ extension PhRemote on PhStore {
   Future<void> addTicketComment(Ticket t, String body) async {
     final c = await _api.post('/tickets/${t.id}/comments', {'body': body}) as Map<String, dynamic>;
     t.comments.add(TaskComment(_userId(c['user'], c['user_id']), '${c['body'] ?? body}', _dateTime(c['created_at'])));
+    t.commentsCount = t.comments.length;
     changed();
   }
 
@@ -648,41 +844,226 @@ extension PhRemote on PhStore {
   void _registerMe() {
     final me = AuthRepository.instance.currentUser;
     if (me == null) return;
-    users['${me.id}'] = PhUser('${me.id}', me.name, isClient: me.roles.contains('client'));
+    if (me.raw.isNotEmpty) {
+      upsertPhUser(me.raw, fallbackId: me.id, client: me.roles.contains('client'));
+      return;
+    }
+    final id = '${me.id}';
+    final prev = users[id];
+    users[id] = PhUser(
+      id,
+      me.name.isNotEmpty ? me.name : (prev?.name ?? '-'),
+      isClient: me.roles.contains('client') || (prev?.isClient ?? false),
+      email: me.email.isNotEmpty ? me.email : (prev?.email ?? ''),
+      photoUrl: prev?.photoUrl ?? '',
+      images: prev?.images ?? const [],
+      joinedAt: prev?.joinedAt ?? '',
+      role: me.roles.isNotEmpty ? me.roles.first : (prev?.role ?? ''),
+    );
+  }
+
+  /// Simpan atau gabungkan data pengguna dari respons API ke [users] tanpa
+  /// menghapus field (`photoUrl`, `images`, `email`, `joinedAt`, `role`) yang
+  /// sudah terisi sebelumnya bila respons parsial.
+  String upsertPhUser(
+    Map<dynamic, dynamic> json, {
+    Object? fallbackId,
+    bool client = false,
+    Map<dynamic, dynamic>? extra,
+  }) {
+    final rawId = json['user_id'] ?? fallbackId ?? json['id'];
+    final id = '${rawId ?? ''}'.trim();
+    if (id.isEmpty || id == 'null') return '';
+    final prev = users[id];
+    final roles = [
+      for (final r in (json['roles'] as List? ?? extra?['roles'] as List? ?? const []))
+        r is Map ? '${r['name'] ?? ''}' : '$r',
+    ].where((s) => s.isNotEmpty).toList();
+    final rawName = '${json['name'] ?? json['user_name'] ?? extra?['user_name'] ?? extra?['name'] ?? ''}'.trim();
+    final name = rawName.isNotEmpty ? rawName : (prev?.name ?? '-');
+    final rawEmail = '${json['email'] ?? extra?['email'] ?? ''}'.trim();
+    final email = rawEmail.isNotEmpty ? rawEmail : (prev?.email ?? '');
+    final rawPhone = '${json['phone'] ?? json['phone_number'] ?? json['no_hp'] ?? json['whatsapp'] ?? extra?['phone'] ?? ''}'.trim();
+    final phone = rawPhone.isNotEmpty ? rawPhone : (prev?.phone ?? '');
+    final imgs = <String>[
+      ...extractUserImages(json),
+      if (extra != null) ...extractUserImages(extra),
+      ...(prev?.images ?? const []),
+    ];
+    final uniqueImgs = <String>[];
+    for (final url in imgs) {
+      if (url.isNotEmpty && !uniqueImgs.contains(url)) uniqueImgs.add(url);
+    }
+    final photoUrl = uniqueImgs.isNotEmpty ? uniqueImgs.first : (prev?.photoUrl ?? '');
+    final rawJoined = _date(
+      json['created_at'] ??
+          json['joined_at'] ??
+          json['hire_date'] ??
+          extra?['created_at'] ??
+          extra?['joined_at'] ??
+          extra?['hire_date'],
+    );
+    final joinedAt = rawJoined.isNotEmpty ? rawJoined : (prev?.joinedAt ?? '');
+    final rawRole = roles.isNotEmpty ? roles.first : '${json['role'] ?? ''}'.trim();
+    final role = rawRole.isNotEmpty ? rawRole : (prev?.role ?? '');
+    final rawStatus = '${json['status'] ?? extra?['status'] ?? ''}'.toLowerCase().trim();
+    final rawActive = json['is_active'] ?? json['active'] ?? extra?['is_active'] ?? extra?['active'];
+    final isActive = rawActive == false || rawActive == 0 || rawStatus == 'inactive' || rawStatus == 'nonaktif' || rawStatus == 'suspended'
+        ? false
+        : (rawActive == true || rawActive == 1 || rawStatus == 'active' || rawStatus == 'aktif'
+            ? true
+            : (prev?.isActive ?? true));
+    users[id] = PhUser(
+      id,
+      name,
+      isClient: client || roles.contains('client') || role.toLowerCase() == 'client' || (prev?.isClient ?? false),
+      isActive: isActive,
+      email: email,
+      phone: phone,
+      photoUrl: photoUrl,
+      images: uniqueImgs,
+      joinedAt: joinedAt,
+      role: role,
+    );
+    return id;
+  }
+
+  Future<void> saveClientUser(PhUser? existing, Map<String, Object?> body) async {
+    final name = '${body['name'] ?? ''}'.trim();
+    final email = '${body['email'] ?? ''}'.trim();
+    final statusStr = '${body['status'] ?? 'active'}';
+    final isActive = statusStr != 'inactive';
+    final password = '${body['password'] ?? ''}'.trim();
+    final payload = <String, Object?>{
+      'name': name,
+      'email': email,
+      'role': 'client',
+      'roles': ['client'],
+      'is_client': true,
+      'is_active': isActive,
+      'status': isActive ? 'active' : 'inactive',
+      if (password.isNotEmpty) 'password': password,
+    };
+
+    try {
+      if (existing == null) {
+        final res = await _api.post('/clients', payload).catchError((_) => _api.post('/users', payload));
+        if (res is Map) {
+          final data = res['client'] ?? res['user'] ?? res['data'] ?? res;
+          if (data is Map) {
+            upsertPhUser(data, client: true);
+            changed();
+            return;
+          }
+        }
+      } else {
+        final res = await _api
+            .put('/clients/${existing.id}', payload)
+            .catchError((_) => _api.put('/users/${existing.id}', payload));
+        if (res is Map) {
+          final data = res['client'] ?? res['user'] ?? res['data'] ?? res;
+          if (data is Map) {
+            upsertPhUser(data, fallbackId: existing.id, client: true);
+            changed();
+            return;
+          }
+        }
+      }
+    } catch (_) {
+      // Fallback update di memori bila endpoint khusus admin client belum tersedia
+    }
+
+    final id = existing?.id ?? '${nextId()}';
+    final prev = users[id];
+    users[id] = PhUser(
+      id,
+      name.isEmpty ? (prev?.name ?? 'Klien Baru') : name,
+      isClient: true,
+      isActive: isActive,
+      email: email,
+      photoUrl: prev?.photoUrl ?? '',
+      images: prev?.images ?? const [],
+      joinedAt: prev?.joinedAt.isNotEmpty == true ? prev!.joinedAt : isoDate(DateTime.now()),
+      role: 'client',
+    );
+    changed();
+  }
+
+  Future<void> deleteClientUser(PhUser client) async {
+    try {
+      await _api.delete('/clients/${client.id}').catchError((_) => _api.delete('/users/${client.id}'));
+    } catch (_) {
+      // Tetap hapus dari daftar lokal bila endpoint mengembalikan error
+    }
+    users.remove(client.id);
+    changed();
   }
 
   Future<void> _loadUsers() async {
     try {
-      for (final u in await _api.getAll('/users')) {
-        final roles = [for (final r in (u['roles'] as List? ?? const [])) r is Map ? '${r['name']}' : '$r'];
-        users['${u['id']}'] = PhUser('${u['id']}', '${u['name'] ?? '-'}', isClient: roles.contains('client'));
+      final results = await Future.wait<dynamic>([
+        _api.getAll('/users').catchError((_) => <Map<String, dynamic>>[]),
+        _api.get('/hris/employees').catchError((_) => const <dynamic>[]),
+      ]);
+      for (final u in (results[0] as List)) {
+        if (u is Map) upsertPhUser(u);
       }
-    } on ApiException {
+      final empRes = results[1];
+      final empList = empRes is List
+          ? empRes
+          : (empRes is Map ? (empRes['employees'] ?? empRes['data']) : null);
+      if (empList is List) {
+        for (final e in empList) {
+          if (e is Map) upsertPhUser(e);
+        }
+      }
+    } catch (_) {
       // Role client tidak boleh membaca /users; nama diambil dari relasi saja.
     }
   }
 
-  String _userId(Object? json, Object? fallbackId, {bool client = false}) {
+  String _userId(Object? json, Object? fallbackId, {bool client = false, Map<dynamic, dynamic>? extra}) {
     if (json is Map) {
-      final id = '${json['id']}';
-      users.putIfAbsent(id, () => PhUser(id, '${json['name'] ?? '-'}', isClient: client));
-      return id;
+      return upsertPhUser(json, fallbackId: fallbackId, client: client, extra: extra);
+    }
+    if (extra != null && fallbackId != null) {
+      return upsertPhUser(extra, fallbackId: fallbackId, client: client);
     }
     return fallbackId == null ? '' : '$fallbackId';
+  }
+
+  ProjectMember _member(Map<String, dynamic> m) {
+    final pivot = m['pivot'] is Map ? m['pivot'] as Map : null;
+    final userMap = m['user'] is Map ? m['user'] as Map : null;
+    final rawUserId = userMap?['id'] ?? m['user_id'] ?? pivot?['user_id'] ?? m['id'];
+    final uid = _userId(userMap, rawUserId, extra: m);
+    final imgs = <String>[
+      ...extractUserImages(m),
+      ...(users[uid]?.images ?? const []),
+    ];
+    final uniqueImgs = <String>[];
+    for (final url in imgs) {
+      if (url.isNotEmpty && !uniqueImgs.contains(url)) uniqueImgs.add(url);
+    }
+    final role = '${m['role'] ?? pivot?['role'] ?? ''}'.trim();
+    final maxHours = _int(m['max_hours_per_day'] ?? pivot?['max_hours_per_day'], 8);
+    return ProjectMember(
+      id: _int(m['id']),
+      userId: uid,
+      role: role,
+      maxHoursPerDay: maxHours,
+      photoUrl: uniqueImgs.isNotEmpty ? uniqueImgs.first : (users[uid]?.photoUrl ?? ''),
+      images: uniqueImgs,
+    );
   }
 
   // ------------------------------------------------------------ mapper JSON -> model
 
   Project _project(Map<String, dynamic> j) {
     final clientId = _userId(j['client'], j['client_id'], client: true);
+    final rawMembers = j['members'] ?? j['team'] ?? j['team_members'];
     final members = [
-      for (final m in (j['members'] as List? ?? const []))
-        ProjectMember(
-          id: _int(m['id']),
-          userId: _userId(m['user'], m['user_id']),
-          role: '${m['role'] ?? ''}',
-          maxHoursPerDay: _int(m['max_hours_per_day'], 8),
-        ),
+      for (final m in (rawMembers is List ? rawMembers : const []).whereType<Map<String, dynamic>>()) _member(m),
     ];
     return Project(
       id: _int(j['id']),
@@ -700,6 +1081,7 @@ extension PhRemote on PhStore {
       meetAt: _dateTime(j['meeting_starts_at']),
       progress: _int(j['progress']),
       category: clientId.isEmpty ? 'Internal' : 'Client',
+      images: _images(j['images']),
       memberColors: [for (var i = 0; i < members.length.clamp(1, 4); i++) _palette[(_int(j['id']) + i) % _palette.length]],
       members: members,
     );
@@ -763,25 +1145,64 @@ extension PhRemote on PhStore {
       ..description = from.description;
   }
 
-  Ticket _ticket(Map<String, dynamic> j, Project? p) => Ticket(
-        id: _int(j['id']),
-        projectName: p?.name ?? '',
-        milestone: p?.milestones.where((m) => m.id == _int(j['milestone_id'])).firstOrNull?.title ?? '',
-        title: '${j['title'] ?? ''}',
-        description: '${j['description'] ?? ''}',
-        solution: '${j['solution'] ?? ''}',
-        type: '${j['type'] ?? 'bug'}',
-        errorCategory: '${j['error_category'] ?? 'other'}',
-        priority: '${j['priority'] ?? 'medium'}',
-        status: '${j['status'] ?? 'open'}',
-        reporterId: _userId(j['reporter'], j['reporter_id']),
-        assigneeId: _userId(j['assignee'], j['assignee_id']),
-        slaDueAt: _dateTime(j['sla_due_at']),
-        slaBreached: j['sla_breached'] == true || j['sla_breached'] == 1,
-        slaPaused: j['sla_paused'] == true || j['sla_paused'] == 1,
-        escalated: j['escalated_at'] != null,
-        resolvedAt: _dateTime(j['resolved_at']),
-      );
+  Ticket _ticket(Map<String, dynamic> j, Project? p) {
+    final pid = p?.id ?? _int(j['project_id'] ?? (j['project'] is Map ? j['project']['id'] : null));
+    final proj = p ?? (pid != 0 ? projectById(pid) : null);
+    final pname = proj?.name ?? (j['project'] is Map ? '${j['project']['name'] ?? ''}' : '${j['project_name'] ?? ''}');
+    final directAssignee = _userId(j['assignee'], j['assignee_id']);
+    final assigneeIds = <String>[
+      if (directAssignee.isNotEmpty) directAssignee,
+      if (j['assignees'] is List)
+        for (final a in j['assignees'] as List)
+          if (a is Map)
+            _userId(a, a['id'])
+          else if ('$a'.trim().isNotEmpty)
+            '$a'.trim(),
+    ];
+    final uniqueAssignees = <String>[];
+    for (final id in assigneeIds) {
+      if (id.isNotEmpty && !uniqueAssignees.contains(id)) uniqueAssignees.add(id);
+    }
+    final milestone = j['milestone'] is Map
+        ? '${j['milestone']['title'] ?? ''}'
+        : (proj?.milestones.where((m) => m.id == _int(j['milestone_id'])).firstOrNull?.title ?? '${j['milestone'] ?? ''}');
+    final rawAttachments = j['attachments'] ?? j['files'];
+    return Ticket(
+      id: _int(j['id']),
+      projectId: pid,
+      projectName: pname,
+      milestone: milestone,
+      title: '${j['title'] ?? ''}',
+      description: '${j['description'] ?? ''}',
+      solution: '${j['solution'] ?? ''}',
+      type: '${j['type'] ?? 'bug'}',
+      errorCategory: '${j['error_category'] ?? ''}',
+      priority: '${j['priority'] ?? 'medium'}',
+      status: '${j['status'] ?? 'open'}',
+      reporterId: _userId(j['reporter'] ?? j['creator'] ?? j['user'], j['reporter_id'] ?? j['created_by'] ?? j['user_id']),
+      assigneeId: uniqueAssignees.firstOrNull ?? '',
+      assigneeIds: uniqueAssignees,
+      createdAt: _dateTime(j['created_at']),
+      slaDueAt: _dateTime(j['sla_due_at']),
+      slaBreached: j['sla_breached'] == true || j['sla_breached'] == 1,
+      slaPaused: j['sla_paused'] == true || j['sla_paused'] == 1,
+      escalated: j['escalated_at'] != null,
+      resolvedAt: _dateTime(j['resolved_at']),
+      meetLink: '${j['google_meet_link'] ?? j['meet_link'] ?? ''}',
+      commentsCount: _int(j['comments_count'], j['comments'] is List ? (j['comments'] as List).length : 0),
+      attachments: [
+        if (rawAttachments is List)
+          for (final a in rawAttachments)
+            if (a is Map)
+              KbAttachment(
+                id: _int(a['id']),
+                name: '${a['name'] ?? a['file_name'] ?? a['original_name'] ?? ''}',
+                url: _resolveMediaUrl('${a['url'] ?? a['path'] ?? a['file_path'] ?? ''}'),
+                size: _int(a['size'] ?? a['file_size']),
+              ),
+      ],
+    );
+  }
 
   void _copyTicket(Ticket from, Ticket to) {
     to
@@ -789,14 +1210,26 @@ extension PhRemote on PhStore {
       ..description = from.description
       ..solution = from.solution
       ..type = from.type
+      ..errorCategory = from.errorCategory
+      ..milestone = from.milestone.isEmpty ? to.milestone : from.milestone
       ..priority = from.priority
       ..status = from.status
       ..assigneeId = from.assigneeId.isEmpty ? to.assigneeId : from.assigneeId
+      ..assigneeIds = from.assigneeIds.isEmpty ? to.assigneeIds : from.assigneeIds
+      ..createdAt = from.createdAt.isEmpty ? to.createdAt : from.createdAt
       ..slaDueAt = from.slaDueAt
       ..slaBreached = from.slaBreached
       ..slaPaused = from.slaPaused
       ..escalated = from.escalated
-      ..resolvedAt = from.resolvedAt;
+      ..resolvedAt = from.resolvedAt
+      ..meetLink = from.meetLink.isEmpty ? to.meetLink : from.meetLink
+      ..commentsCount = from.commentsCount > 0 ? from.commentsCount : to.commentsCount;
+    if (from.attachments.isNotEmpty) {
+      to.attachments
+        ..clear()
+        ..addAll(from.attachments);
+    }
+    if (from.projectId != 0) to.projectId = from.projectId;
     if (from.projectName.isNotEmpty) to.projectName = from.projectName;
   }
 
@@ -879,6 +1312,110 @@ int? _positiveOrNull(Object? v) {
 String? _nullIfEmpty(Object? v) {
   final s = '${v ?? ''}'.trim();
   return s.isEmpty ? null : s;
+}
+
+const _userImageKeys = [
+  'images',
+  'image',
+  'image_url',
+  'image_path',
+  'avatar',
+  'avatar_url',
+  'avatar_path',
+  'photo',
+  'photo_url',
+  'photo_path',
+  'profile_photo_url',
+  'profile_photo_path',
+  'user_images',
+  'user_image',
+  'user_avatar',
+  'user_photo',
+  'face_photo',
+  'face_photo_url',
+  'media',
+];
+
+/// Ekstrak daftar URL gambar dari objek pengguna/anggota (mendukung field
+/// `images`, `image`, `avatar`, `photo`, `profile_photo_url`, `foto`, dsb.,
+/// termasuk objek bersarang `user`, `employee`, `profile`).
+List<String> extractUserImages(Map<dynamic, dynamic> json) {
+  final out = <String>[];
+  for (final k in _userImageKeys) {
+    for (final url in _images(json[k])) {
+      if (url.isNotEmpty && !out.contains(url)) out.add(url);
+    }
+  }
+  for (final entry in json.entries) {
+    final k = '${entry.key}'.toLowerCase();
+    if (k.contains('descriptor') || k.contains('threshold') || k.contains('enrolled') || k.contains('require') || k.contains('enable')) {
+      continue;
+    }
+    if (k.contains('image') || k.contains('img') || k.contains('avatar') || k.contains('photo') || k.contains('foto') || k.contains('pic') || k.contains('thumb') || k.contains('face')) {
+      for (final url in _images(entry.value)) {
+        if (url.isNotEmpty && !out.contains(url)) out.add(url);
+      }
+    }
+  }
+  for (final nestedKey in const ['user', 'employee', 'profile', 'member', 'data']) {
+    final nested = json[nestedKey];
+    if (nested is Map) {
+      for (final url in extractUserImages(nested)) {
+        if (url.isNotEmpty && !out.contains(url)) out.add(url);
+      }
+    }
+  }
+  return out;
+}
+
+/// Daftar gambar dari server. Nilai bisa berupa List (berisi String URL/path
+/// atau Map objek gambar), Map tunggal, atau String URL/path langsung.
+List<String> _images(Object? v) {
+  if (v is List) {
+    final out = <String>[];
+    for (final e in v) {
+      for (final url in _images(e)) {
+        if (url.isNotEmpty && !out.contains(url)) out.add(url);
+      }
+    }
+    return out;
+  }
+  if (v is Map) {
+    final raw = '${v['url'] ?? v['path'] ?? v['image_url'] ?? v['image_path'] ?? v['file_path'] ?? v['file_url'] ?? v['original_url'] ?? v['preview_url'] ?? v['src'] ?? v['image'] ?? v['avatar'] ?? v['photo'] ?? ''}'.trim();
+    final resolved = _resolveMediaUrl(raw);
+    return resolved.isEmpty ? const [] : [resolved];
+  }
+  if (v is String) {
+    final resolved = _resolveMediaUrl(v);
+    return resolved.isEmpty ? const [] : [resolved];
+  }
+  return const [];
+}
+
+/// Path dari API Laravel bisa berupa URL penuh atau path relatif disk publik
+/// (mis. "project-images/xxx.jpg" atau "/storage/avatars/xxx.jpg") yang
+/// disajikan lewat [kStorageBaseUrl].
+String _resolveMediaUrl(String path) {
+  final trimmed = path.trim();
+  if (trimmed.isEmpty ||
+      trimmed == 'null' ||
+      trimmed == 'true' ||
+      trimmed == 'false' ||
+      trimmed == '0' ||
+      trimmed == '1' ||
+      trimmed.startsWith('[') ||
+      trimmed.startsWith('{')) {
+    return '';
+  }
+  if (trimmed.startsWith('http://flovig.com/')) {
+    return 'https://flovig.com/${trimmed.substring('http://flovig.com/'.length)}';
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  var clean = trimmed.startsWith('/') ? trimmed.substring(1) : trimmed;
+  if (clean.startsWith('storage/')) clean = clean.substring('storage/'.length);
+  return '$kStorageBaseUrl/$clean';
 }
 
 /// Tanggal dari API disimpan UTC; dikonversi ke zona lokal sebelum dipotong

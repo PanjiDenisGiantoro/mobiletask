@@ -22,27 +22,21 @@ class BannerSlide {
 const kDefaultBannerSlides = [
   BannerSlide(
     badge: 'FLOVIG WORKSPACE',
-    title: 'Satu Akun untuk\nSemua Kebutuhan Kerja',
-    subtitle: 'Kelola proyek, tugas, dan tim dalam satu aplikasi.',
-    watermark: 'assets/images/flovig_logo.png',
+    title: 'Satu Platform untuk\nProyek & Tugas Tim',
+    subtitle: 'Kelola proyek, tugas, sprint, & kolaborasi tim dalam genggaman.',
+    watermark: 'assets/images/banner_flovig_workspace.jpg',
   ),
   BannerSlide(
-    badge: 'PROYEK',
-    title: 'Kelola Proyek\nLebih Rapi',
-    subtitle: 'Atur deadline dan progres tim tanpa ribet.',
-    watermark: 'assets/icons/illustrations/project_management.svg',
+    badge: 'KEUNGGULAN UTAMA',
+    title: 'Pantau Progres\nReal-Time & Akurat',
+    subtitle: 'Kanban board, SLA tiket, & laporan PDF/Excel instan.',
+    watermark: 'assets/images/banner_flovig_features.jpg',
   ),
   BannerSlide(
-    badge: 'TUGAS',
-    title: 'Pantau Tugas\nReal-Time',
-    subtitle: 'Tandai selesai dan lihat prioritas dalam genggaman.',
-    watermark: 'assets/icons/illustrations/task.svg',
-  ),
-  BannerSlide(
-    badge: 'TIM',
-    title: 'Kolaborasi Tim\nTanpa Batas',
-    subtitle: 'Diskusi dan koordinasi jarak jauh jadi mudah.',
-    watermark: 'assets/icons/illustrations/human_source.svg',
+    badge: 'PROMO · HEMAT 17%',
+    title: 'Upgrade Paket Pro\nLebih Hemat Tahunan',
+    subtitle: 'Bayar praktis lewat DOKU QRIS, VA & E-Wallet.',
+    watermark: 'assets/images/banner_flovig_promo.jpg',
   ),
 ];
 
@@ -130,59 +124,92 @@ class _HeroBannerCarouselState extends State<HeroBannerCarousel> {
 
   Widget _buildSlide(BannerSlide slide) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
-      child: Stack(
-        clipBehavior: Clip.none,
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.md, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Positioned(
-            right: -30,
-            top: -10,
-            child: Opacity(
-              opacity: 0.14,
-              child: slide.watermark.endsWith('.svg')
-                  ? SvgPicture.asset(slide.watermark, width: 150, height: 150)
-                  : Image.asset(slide.watermark, width: 170, height: 170, fit: BoxFit.contain),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  slide.badge,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.4,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                  ),
+                  child: Text(
+                    slide.badge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.9,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                slide.title,
-                style: GoogleFonts.spaceGrotesk(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                  letterSpacing: -0.4,
+                const SizedBox(height: 12),
+                Text(
+                  slide.title,
+                  style: GoogleFonts.spaceGrotesk(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w700,
+                    height: 1.22,
+                    letterSpacing: -0.4,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                slide.subtitle,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
+                const SizedBox(height: 6),
+                Text(
+                  slide.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 138,
+            height: 138,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: slide.watermark.endsWith('.svg')
+                  ? Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: SvgPicture.asset(slide.watermark, fit: BoxFit.contain),
+                    )
+                  : Image.asset(
+                      slide.watermark,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        alignment: Alignment.center,
+                        child: Image.asset('assets/images/flovig_logo.png', width: 64, height: 64, fit: BoxFit.contain),
+                      ),
+                    ),
+            ),
           ),
         ],
       ),

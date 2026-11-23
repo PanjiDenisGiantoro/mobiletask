@@ -2,6 +2,7 @@ import 'auth_repository.dart';
 import 'ph_api.dart';
 import '../utils/ph_format.dart';
 import 'ph_models.dart';
+import 'ph_remote.dart';
 import 'ph_store.dart';
 import '../widgets/ph_form.dart';
 
@@ -28,8 +29,7 @@ extension HrisRemote on PhStore {
       hrisPermissions
         ..clear()
         ..addAll([for (final p in (me['permissions'] as List? ?? const [])) '$p']);
-      final meId = '${me['id']}';
-      users[meId] = PhUser(meId, '${me['name'] ?? '-'}');
+      upsertPhUser(me);
 
       final year = DateTime.now().year;
       final r = await Future.wait<dynamic>([
@@ -494,7 +494,7 @@ extension HrisRemote on PhStore {
       );
 
   Employee _employee(Map<String, dynamic> j) {
-    final id = _uid(j['id'], j['name']);
+    final id = upsertPhUser(j);
     return Employee(
       id: id,
       name: '${j['name'] ?? ''}',

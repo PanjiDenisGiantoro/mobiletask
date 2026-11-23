@@ -30,8 +30,12 @@
 	<string>Lokasi dipakai untuk memastikan absensi dilakukan di area kantor.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Flovig butuh akses kamera untuk melampirkan foto pada tugas.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Flovig menggunakan Face ID / Touch ID untuk masuk dengan cepat dan aman.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Flovig butuh akses galeri untuk melampirkan foto pada tugas.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Flovig butuh akses galeri untuk menyimpan gambar milestone yang diunduh.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

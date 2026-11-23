@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../data/auth_repository.dart';
-import 'otp_verification_sheet.dart';
+import '../widgets/app_icons.dart';
 import '../widgets/hero_banner_carousel.dart';
 
 /// Form login mengikuti referensi desain login1.png (header lengkung +
@@ -37,6 +37,21 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
     setState(() => _loading = true);
     try {
       await AuthRepository.instance.login(_emailController.text.trim(), _passwordController.text);
+      if (!mounted) return;
+      context.go('/home');
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loginWithFingerprint() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await AuthRepository.instance.loginWithBiometrics();
       if (!mounted) return;
       context.go('/home');
     } on AuthException catch (e) {
@@ -100,50 +115,68 @@ class _LoginFormScreenState extends State<LoginFormScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => showOtpVerificationSheet(context),
+                        onPressed: () {
+                          final email = _emailController.text.trim();
+                          final q = email.isEmpty ? '' : '?email=${Uri.encodeQueryComponent(email)}';
+                          context.push('/forgot-password$q');
+                        },
                         style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
                         child: const Text('Lupa Password?',
                             style: TextStyle(color: AppColors.primary600, fontWeight: FontWeight.w600, fontSize: 13)),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary600,
-                          disabledBackgroundColor: AppColors.primary600.withValues(alpha: 0.7),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: _loading ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary600,
+                                disabledBackgroundColor: AppColors.primary600.withValues(alpha: 0.7),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+                              ),
+                              child: _loading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                    )
+                                  : const Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ),
+                          ),
                         ),
-                        child: _loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                              )
-                            : const Text('Login', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                      ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Tooltip(
+                          message: 'Login dengan Sidik Jari',
+                          child: InkWell(
+                            onTap: _loading ? null : _loginWithFingerprint,
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: AppColors.accent400.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.accent400.withValues(alpha: 0.4)),
+                              ),
+                              child: const AppIcon(
+                                AppIconType.fingerprint,
+                                color: AppColors.accent400,
+                                size: 23,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     _buildDividerWithText('Atau masuk dengan'),
                     const SizedBox(height: AppSpacing.md),
                     _buildGoogleButton(),
-                    const SizedBox(height: AppSpacing.lg),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("Belum punya akun? ", style: TextStyle(color: AppColors.grey700, fontSize: 13)),
-                        TextButton(
-                          onPressed: () => context.pushReplacement('/register'),
-                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                          child: const Text('Daftar',
-                              style: TextStyle(color: AppColors.primary600, fontWeight: FontWeight.w700, fontSize: 13)),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

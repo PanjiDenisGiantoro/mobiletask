@@ -3,14 +3,23 @@ import 'package:go_router/go_router.dart';
 import 'splash_screen.dart';
 import 'app/screens/welcome_screen.dart';
 import 'app/screens/login_form_screen.dart';
+import 'app/screens/forgot_password_screen.dart';
 import 'app/screens/register_form_screen.dart';
 import 'app/screens/home_screen.dart';
 import 'app/screens/projects_screen.dart';
 import 'app/screens/tasks_screen.dart';
 import 'app/screens/admin_settings_screen.dart';
+import 'app/screens/clients_screen.dart';
+import 'app/screens/invoices_screen.dart';
+import 'app/screens/organization_screens.dart';
+import 'app/screens/payment_history_screen.dart';
+import 'app/screens/profile_edit_screen.dart';
 import 'app/screens/shift_settings_screen.dart';
 import 'app/screens/calendar_screen.dart';
+import 'app/screens/reporting_screen.dart';
 import 'app/screens/reports_screen.dart';
+import 'app/screens/support_screens.dart';
+import 'app/screens/members_clients_screen.dart';
 import 'app/screens/ph_screens.dart';
 
 /// Transisi fade, dipakai untuk splash → welcome (dan setiap kali kembali
@@ -59,6 +68,12 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _slideUpPage(state, const LoginFormScreen()),
     ),
     GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => ForgotPasswordScreen(
+        initialEmail: state.uri.queryParameters['email'] ?? '',
+      ),
+    ),
+    GoRoute(
       path: '/register',
       pageBuilder: (context, state) => _slideUpPage(state, const RegisterFormScreen()),
     ),
@@ -68,11 +83,30 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/messages', builder: (context, state) => const ChatHubScreen()),
     GoRoute(path: '/chat', builder: (context, state) => const ChatHubScreen()),
     GoRoute(path: '/admin-settings', builder: (context, state) => const AdminSettingsScreen()),
+    GoRoute(path: '/clients', builder: (context, state) => const ClientsScreen()),
+    GoRoute(path: '/roles', builder: (context, state) => const RolesScreen()),
+    GoRoute(path: '/permissions', builder: (context, state) => const PermissionsScreen()),
+    GoRoute(path: '/activity-logs', builder: (context, state) => const ActivityLogsScreen()),
+    GoRoute(path: '/invoices', builder: (context, state) => const InvoicesScreen()),
+    GoRoute(path: '/payment-history', builder: (context, state) => const PaymentHistoryScreen()),
+    GoRoute(
+      path: '/profile/edit',
+      builder: (context, state) => ProfileEditScreen(focusPassword: state.uri.queryParameters['focus'] == 'password'),
+    ),
     GoRoute(path: '/shift-settings', builder: (context, state) => const ShiftSettingsScreen()),
     GoRoute(path: '/attendance', builder: (context, state) => const AttendanceScreen()),
     GoRoute(path: '/leave', builder: (context, state) => const LeaveScreen()),
     GoRoute(path: '/calendar', builder: (context, state) => const CalendarScreen()),
     GoRoute(path: '/reports', builder: (context, state) => const ReportsScreen()),
+    GoRoute(path: '/reporting', builder: (context, state) => const ReportingScreen()),
+    GoRoute(path: '/help-center', builder: (context, state) => const HelpCenterScreen()),
+    GoRoute(path: '/privacy-policy', builder: (context, state) => const PrivacyPolicyScreen()),
+    GoRoute(
+      path: '/members-clients',
+      builder: (context, state) => MembersClientsScreen(
+        initialFilter: state.uri.queryParameters['filter'] ?? 'all',
+      ),
+    ),
     // ── Modul projecthub_pro ────────────────────────────────────────────────
     GoRoute(
       path: '/form',

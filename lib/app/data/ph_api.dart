@@ -79,8 +79,22 @@ class PhApi {
       final res = await get('$path${sep}page=$page');
       if (res is List) return res.whereType<Map<String, dynamic>>().toList();
       if (res is! Map<String, dynamic>) return out;
-      out.addAll((res['data'] as List? ?? const []).whereType<Map<String, dynamic>>());
-      final last = res['last_page'] as int? ?? 1;
+      final rawList = res['data'] ??
+          res['tickets'] ??
+          res['bug_tickets'] ??
+          res['tasks'] ??
+          res['users'] ??
+          res['members'] ??
+          res['team'] ??
+          res['employees'] ??
+          res['items'] ??
+          res.values.whereType<List>().firstOrNull;
+      if (rawList is List) {
+        out.addAll(rawList.whereType<Map<String, dynamic>>());
+      } else if (rawList is Map && rawList['data'] is List) {
+        out.addAll((rawList['data'] as List).whereType<Map<String, dynamic>>());
+      }
+      final last = (res['last_page'] as int?) ?? (rawList is Map ? rawList['last_page'] as int? : null) ?? 1;
       if (page >= last || page >= 50) return out;
       page++;
     }

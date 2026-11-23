@@ -103,6 +103,11 @@ class _HrisDashboardBodyState extends State<HrisDashboardBody> {
         builder: (context, _) => _build(context),
       );
 
+  Future<void> _onRefresh() => Future.wait([
+        PhStore.instance.syncHris(),
+        AttendanceRepository.instance.loadTeam(isoDate(DateTime.now())),
+      ]);
+
   Widget _build(BuildContext context) {
     final store = PhStore.instance;
     final team = AttendanceRepository.instance.team;
@@ -110,7 +115,9 @@ class _HrisDashboardBodyState extends State<HrisDashboardBody> {
     final pending = _pendingForMe(store);
     final activity = _activity(store);
     String count(bool known, int n) => known ? '$n' : '-';
-    return CustomScrollView(
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: CustomScrollView(
       slivers: [
         SliverAppBar(
           pinned: true,
@@ -376,6 +383,7 @@ class _HrisDashboardBodyState extends State<HrisDashboardBody> {
           ),
         ),
       ],
+      ),
     );
   }
 }

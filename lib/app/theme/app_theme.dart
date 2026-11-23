@@ -1,45 +1,58 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Palet biru-teal mengikuti gradasi logo Flovig.
-  static const primary900 = Color(0xFF062A4D);
-  static const primary800 = Color(0xFF0A3E70);
-  static const primary700 = Color(0xFF0D5695);
-  static const primary600 = Color(0xFF0F7BD4);
-  static const primary400 = Color(0xFF4FA6E8);
-  static const primary200 = Color(0xFFA9D6F6);
-  static const primary50  = Color(0xFFE7F4FD);
+  // Palet biru SaaS modern Flovig yang seragam di seluruh halaman.
+  static const primary900 = Color(0xFF0F172A);
+  static const primary800 = Color(0xFF1E3A8A);
+  static const primary700 = Color(0xFF1D4ED8);
+  static const primary600 = Color(0xFF2563EB);
+  static const primary400 = Color(0xFF60A5FA);
+  static const primary200 = Color(0xFFBFDBFE);
+  static const primary50  = Color(0xFFEFF6FF);
 
-  static const accent400  = Color(0xFF14C6BB);
-  static const accent200  = Color(0xFF8FE9DD);
+  static const accent400  = Color(0xFF0EA5E9);
+  static const accent200  = Color(0xFFBAE6FD);
 
-  static const success    = Color(0xFF43A047);
-  static const warning    = Color(0xFFFB8C00);
-  static const error      = Color(0xFFE53935);
-  static const info       = Color(0xFF1E88E5);
+  static const success    = Color(0xFF16A34A);
+  static const warning    = Color(0xFFF59E0B);
+  static const error      = Color(0xFFDC2626);
+  static const info       = Color(0xFF2563EB);
 
-  static const successBg  = Color(0xFFE8F5E9);
-  static const warningBg  = Color(0xFFFFF3E0);
-  static const errorBg    = Color(0xFFFFEBEE);
+  static const successBg  = Color(0xFFECFDF5);
+  static const warningBg  = Color(0xFFFEF3C7);
+  static const errorBg    = Color(0xFFFEE2E2);
 
-  static const grey900    = Color(0xFF212121);
-  static const grey700    = Color(0xFF616161);
-  static const grey500    = Color(0xFF9E9E9E);
-  static const grey400    = Color(0xFFBDBDBD);
-  static const grey100    = Color(0xFFF5F5F5);
+  static const grey900    = Color(0xFF0F172A);
+  static const grey700    = Color(0xFF475569);
+  static const grey500    = Color(0xFF64748B);
+  static const grey400    = Color(0xFF94A3B8);
+  static const grey100    = Color(0xFFF1F5F9);
   static const white      = Color(0xFFFFFFFF);
+  static const border     = Color(0xFFE2E8F0);
 
-  /// Gradasi hero mengikuti ikon logo: biru -> cyan -> teal.
-  static const heroStart  = Color(0xFF0A87E0);
-  static const heroMid    = Color(0xFF17B4C7);
-  static const heroEnd    = Color(0xFF14D6B4);
+  /// Gradasi hero & AppBar seragam (biru royal Flovig).
+  static const heroStart  = Color(0xFF1D4ED8);
+  static const heroMid    = Color(0xFF2563EB);
+  static const heroEnd    = Color(0xFF3B82F6);
 
-  /// Latar layar utama (biru sangat terang) dipakai di semua tab.
-  static const bg         = Color(0xFFF2FAFC);
+  /// Latar layar utama seragam (Slate 50) dipakai di semua halaman.
+  static const bg         = Color(0xFFF8FAFC);
 
   /// Latar gelap untuk layar onboarding, senada dengan wordmark logo.
   static const onboardingBg    = Color(0xFF071A30);
   static const onboardingTrack = Color(0xFF163654);
+
+  /// Palet Dark Mode (Slate Dark).
+  static const darkBg              = Color(0xFF0B1120);
+  static const darkSurface         = Color(0xFF111827);
+  static const darkSurfaceElevated = Color(0xFF1E293B);
+  static const darkBorder          = Color(0xFF283548);
+  static const darkTextPrimary     = Color(0xFFF1F5F9);
+  static const darkTextSecondary   = Color(0xFFCBD5E1);
+  static const darkTextMuted       = Color(0xFF94A3B8);
+  static const darkSuccessBg       = Color(0xFF052E16);
+  static const darkWarningBg       = Color(0xFF451A03);
+  static const darkErrorBg         = Color(0xFF450A0A);
 }
 
 class AppSpacing {
@@ -62,9 +75,9 @@ class AppRadius {
 class AppShadows {
   static const List<BoxShadow> card = [
     BoxShadow(
-      color: Color(0x14212121),
-      blurRadius: 12,
-      offset: Offset(0, 4),
+      color: Color(0x0A0F172A),
+      blurRadius: 10,
+      offset: Offset(0, 2),
     ),
   ];
 }
@@ -77,22 +90,24 @@ ThemeData buildAppTheme() {
       primary: AppColors.primary600,
       surface: AppColors.white,
     ),
-    scaffoldBackgroundColor: AppColors.grey100,
+    scaffoldBackgroundColor: AppColors.bg,
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.primary700,
+      backgroundColor: AppColors.heroStart,
       foregroundColor: AppColors.white,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       titleTextStyle: TextStyle(
         color: AppColors.white,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
       ),
     ),
     cardTheme: CardThemeData(
       color: AppColors.white,
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.medium),
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        side: const BorderSide(color: AppColors.border),
       ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -103,4 +118,103 @@ ThemeData buildAppTheme() {
       type: BottomNavigationBarType.fixed,
     ),
   );
+}
+
+ThemeData buildDarkAppTheme() {
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary600,
+      brightness: Brightness.dark,
+      primary: AppColors.primary400,
+      surface: AppColors.darkSurface,
+    ),
+    scaffoldBackgroundColor: AppColors.darkBg,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.darkSurface,
+      foregroundColor: AppColors.darkTextPrimary,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      titleTextStyle: TextStyle(
+        color: AppColors.darkTextPrimary,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      color: AppColors.darkSurface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        side: const BorderSide(color: AppColors.darkBorder),
+      ),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: AppColors.darkSurface,
+      selectedItemColor: AppColors.primary400,
+      unselectedItemColor: AppColors.darkTextMuted,
+      elevation: 8,
+      type: BottomNavigationBarType.fixed,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.darkSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        side: const BorderSide(color: AppColors.darkBorder),
+      ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.darkSurface,
+      surfaceTintColor: Colors.transparent,
+    ),
+    dividerTheme: const DividerThemeData(color: AppColors.darkBorder),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.darkSurfaceElevated,
+      hintStyle: const TextStyle(color: AppColors.darkTextMuted),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        borderSide: const BorderSide(color: AppColors.darkBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        borderSide: const BorderSide(color: AppColors.darkBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        borderSide: const BorderSide(color: AppColors.primary400, width: 1.5),
+      ),
+    ),
+  );
+}
+
+/// Helper warna adaptif Light/Dark mode melalui `context.colors`.
+class AppAdaptiveColors {
+  final bool isDark;
+  const AppAdaptiveColors(this.isDark);
+
+  Color get bg => isDark ? AppColors.darkBg : AppColors.bg;
+  Color get surface => isDark ? AppColors.darkSurface : AppColors.white;
+  Color get surfaceAlt =>
+      isDark ? AppColors.darkSurfaceElevated : AppColors.grey100;
+  Color get border => isDark ? AppColors.darkBorder : AppColors.border;
+  Color get textPrimary =>
+      isDark ? AppColors.darkTextPrimary : AppColors.grey900;
+  Color get textSecondary =>
+      isDark ? AppColors.darkTextSecondary : AppColors.grey700;
+  Color get textMuted => isDark ? AppColors.darkTextMuted : AppColors.grey500;
+  Color get textFaint => isDark ? AppColors.darkTextMuted : AppColors.grey400;
+  Color get primary => isDark ? AppColors.primary400 : AppColors.primary600;
+  Color get primarySoft =>
+      isDark ? AppColors.primary900.withValues(alpha: 0.65) : AppColors.primary50;
+  Color get errorBg => isDark ? AppColors.darkErrorBg : AppColors.errorBg;
+  Color get successBg => isDark ? AppColors.darkSuccessBg : AppColors.successBg;
+  Color get warningBg => isDark ? AppColors.darkWarningBg : AppColors.warningBg;
+  List<BoxShadow> get cardShadow => isDark ? const [] : AppShadows.card;
+}
+
+extension AppThemeContextX on BuildContext {
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  AppAdaptiveColors get colors => AppAdaptiveColors(isDarkMode);
 }

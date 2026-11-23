@@ -43,21 +43,25 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm + 2,
       ),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: c.surface,
         borderRadius: BorderRadius.circular(AppRadius.medium),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        border: c.isDark ? Border.all(color: c.border) : null,
+        boxShadow: c.isDark
+            ? const []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 1),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -86,9 +90,9 @@ class TaskTile extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.grey900,
+                    color: c.textPrimary,
                     decoration: isDone ? TextDecoration.lineThrough : null,
-                    decorationColor: AppColors.grey400,
+                    decorationColor: c.textFaint,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -111,9 +115,9 @@ class TaskTile extends StatelessWidget {
                 else
                   Text(
                     project,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.grey700,
+                      color: c.textSecondary,
                     ),
                   ),
               ],

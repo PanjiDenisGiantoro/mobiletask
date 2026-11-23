@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../data/auth_repository.dart';
 import '../theme/app_theme.dart';
 
 /// Menu admin/owner (Members, Organization & Access, Subscription & Billing,
@@ -34,7 +35,7 @@ class AdminSettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
         children: [
           const Text(
-            'Khusus admin/owner — kelola anggota, organisasi, dan sistem.',
+            'Khusus admin/owner — kelola anggota, absensi, dan pelaporan.',
             style: TextStyle(fontSize: 12.5, color: AppColors.grey500),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -44,28 +45,18 @@ class AdminSettingsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           _buildGroup(context, 'Members', [
             _AdminItem(icon: Icons.badge_rounded, label: 'Employee', accent: AppColors.info, route: '/employees'),
-            _AdminItem(icon: Icons.handshake_rounded, label: 'Clients', accent: AppColors.info),
+            _AdminItem(icon: Icons.handshake_rounded, label: 'Clients', accent: AppColors.info, route: '/clients'),
           ]),
           const SizedBox(height: AppSpacing.md),
-          _buildGroup(context, 'Analytics & Reporting', [
-            _AdminItem(icon: Icons.speed_rounded, label: 'Workload', accent: AppColors.success),
-            _AdminItem(icon: Icons.insights_rounded, label: 'Analytics', accent: AppColors.success),
+          _buildGroup(context, 'Reporting', [
+            _AdminItem(icon: Icons.assessment_rounded, label: 'Reporting', accent: AppColors.success, route: '/reporting'),
           ]),
-          const SizedBox(height: AppSpacing.md),
-          _buildGroup(context, 'Organization & Access', [
-            _AdminItem(icon: Icons.apartment_rounded, label: 'Perusahaan', accent: AppColors.primary600),
-            _AdminItem(icon: Icons.admin_panel_settings_rounded, label: 'Roles', accent: AppColors.primary600),
-            _AdminItem(icon: Icons.vpn_key_rounded, label: 'Permissions', accent: AppColors.primary600),
-          ]),
-          const SizedBox(height: AppSpacing.md),
-          _buildGroup(context, 'Subscription & Billing', [
-            _AdminItem(icon: Icons.payments_rounded, label: 'Payment History', accent: AppColors.warning),
-          ]),
-          const SizedBox(height: AppSpacing.md),
-          _buildGroup(context, 'System', [
-            _AdminItem(icon: Icons.history_rounded, label: 'Activity Logs', accent: AppColors.grey700),
-            _AdminItem(icon: Icons.mark_email_unread_rounded, label: 'Notifikasi Email', accent: AppColors.grey700),
-          ]),
+          if (AuthRepository.instance.currentUser?.isAdmin ?? false) ...[
+            const SizedBox(height: AppSpacing.md),
+            _buildGroup(context, 'Subscription & Billing', [
+              _AdminItem(icon: Icons.payments_rounded, label: 'Payment History', accent: AppColors.warning, route: '/payment-history'),
+            ]),
+          ],
         ],
       ),
     );

@@ -1,15 +1,19 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../utils/ph_format.dart';
 import '../data/ph_store.dart';
 
-const phCardShadow = [BoxShadow(color: Color(0x14212121), blurRadius: 12, offset: Offset(0, 4))];
+const phCardShadow = [BoxShadow(color: Color(0x0A0F172A), blurRadius: 10, offset: Offset(0, 2))];
 
-/// AppBar bergradien biru-teal yang sama dengan layar Tasks/Projects.
+/// AppBar bergradien biru Flovig yang seragam di seluruh halaman.
 AppBar phAppBar(String title, {List<Widget>? actions, PreferredSizeWidget? bottom, bool solid = false}) {
   return AppBar(
     backgroundColor: AppColors.heroStart,
     foregroundColor: Colors.white,
+    elevation: 0,
+    surfaceTintColor: Colors.transparent,
     flexibleSpace: Container(
       decoration: BoxDecoration(
         gradient: solid
@@ -17,7 +21,7 @@ AppBar phAppBar(String title, {List<Widget>? actions, PreferredSizeWidget? botto
             : const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.heroStart, AppColors.heroMid]),
       ),
     ),
-    title: Text(title),
+    title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
     actions: actions,
     bottom: bottom,
   );
@@ -35,6 +39,85 @@ void phToast(BuildContext context, String message) {
   final m = ScaffoldMessenger.of(context);
   m.hideCurrentSnackBar();
   m.showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Bar filter rentang tanggal: tombol menampilkan rentang terpilih (buka
+/// date-range picker saat diketuk), shortcut "Bulan ini", dan tombol hapus.
+/// [range] null berarti tidak ada filter (tampilkan semua tanggal).
+class DateRangeFilterBar extends StatelessWidget {
+  final DateTimeRange? range;
+  final ValueChanged<DateTimeRange?> onChanged;
+  const DateRangeFilterBar({super.key, required this.range, required this.onChanged});
+
+  bool get _isThisMonth {
+    final r = range;
+    if (r == null) return false;
+    final thisMonth = currentMonthRange();
+    return isoDate(r.start) == isoDate(thisMonth.start) && isoDate(r.end) == isoDate(thisMonth.end);
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 2),
+      initialDateRange: range ?? currentMonthRange(),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () => _pick(context),
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 7),
+              decoration: BoxDecoration(color: c.surfaceAlt, borderRadius: BorderRadius.circular(AppRadius.full)),
+              child: Row(
+                children: [
+                  Icon(Icons.date_range_rounded, size: 15, color: c.textSecondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      range == null ? 'Semua tanggal' : fmtDateRange(range!.start, range!.end),
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: c.textPrimary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(Icons.expand_more_rounded, size: 16, color: c.textMuted),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!_isThisMonth)
+          TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            ),
+            onPressed: () => onChanged(currentMonthRange()),
+            child: const Text('Bulan ini', style: TextStyle(fontSize: 12.5)),
+          ),
+        if (range != null)
+          IconButton(
+            tooltip: 'Hapus filter tanggal',
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.grey500),
+            onPressed: () => onChanged(null),
+          ),
+      ],
+    );
+  }
 }
 
 class PhPill extends StatelessWidget {
@@ -64,10 +147,16 @@ class PhCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final box = Container(
       width: double.infinity,
       padding: padding,
-      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppRadius.large), boxShadow: phCardShadow),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        border: Border.all(color: c.border),
+        boxShadow: c.cardShadow,
+      ),
       child: child,
     );
     if (onTap == null) return box;
@@ -82,7 +171,9 @@ class PhSection extends StatelessWidget {
   const PhSection(this.title, {super.key, required this.child, this.trailing});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
         padding: const EdgeInsets.only(top: AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +184,7 @@ class PhSection extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(title.toUpperCase(),
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.grey500, letterSpacing: 0.8)),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.textMuted, letterSpacing: 0.8)),
                   ),
                   ?trailing,
                 ],
@@ -103,6 +194,7 @@ class PhSection extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 /// Kartu pasangan label-nilai, dipakai di semua layar detail.
@@ -112,26 +204,32 @@ class KvCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final items = rows.where((r) => r.$2 != null).toList();
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppRadius.large), boxShadow: phCardShadow),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        border: Border.all(color: c.border),
+        boxShadow: c.cardShadow,
+      ),
       child: Column(
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const Divider(height: 1, color: AppColors.grey100),
+            if (i > 0) Divider(height: 1, color: c.surfaceAlt),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 11),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(width: 118, child: Text(items[i].$1, style: const TextStyle(fontSize: 13, color: AppColors.grey700))),
+                  SizedBox(width: 118, child: Text(items[i].$1, style: TextStyle(fontSize: 13, color: c.textSecondary))),
                   Expanded(
                     child: items[i].$2 is Widget
                         ? Align(alignment: Alignment.centerLeft, child: items[i].$2 as Widget)
                         : Text(
                             (items[i].$2 as String).isEmpty ? '-' : items[i].$2 as String,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.grey900),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: c.textPrimary),
                           ),
                   ),
                 ],
@@ -147,10 +245,11 @@ class KvCard extends StatelessWidget {
 class PhAvatar extends StatelessWidget {
   final String userId;
   final double size;
-  const PhAvatar(this.userId, {super.key, this.size = 28});
+  final String? imageUrl;
+  final List<String>? images;
+  const PhAvatar(this.userId, {super.key, this.size = 28, this.imageUrl, this.images});
 
-  @override
-  Widget build(BuildContext context) => Container(
+  Widget _initials() => Container(
         width: size,
         height: size,
         alignment: Alignment.center,
@@ -158,6 +257,46 @@ class PhAvatar extends StatelessWidget {
         child: Text(initials(PhStore.instance.nameOf(userId)),
             style: TextStyle(fontSize: size * 0.4, fontWeight: FontWeight.w700, color: AppColors.primary700)),
       );
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: PhStore.instance,
+      builder: (context, _) {
+        final user = PhStore.instance.users[userId];
+        final candidates = <String>[
+          if (imageUrl != null && imageUrl!.isNotEmpty) imageUrl!,
+          ...?images,
+          if (user != null && user.photoUrl.isNotEmpty) user.photoUrl,
+          ...?user?.images,
+        ];
+        final photoUrl = candidates.where((u) => u.isNotEmpty).firstOrNull ?? '';
+        if (photoUrl.isEmpty) return _initials();
+        if (kIsWeb) {
+          return ClipOval(
+            child: Image.network(
+              photoUrl,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+              errorBuilder: (_, _, _) => _initials(),
+            ),
+          );
+        }
+        return ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: photoUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            placeholder: (_, _) => _initials(),
+            errorWidget: (_, _, _) => _initials(),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// Baris daftar dengan judul, keterangan, dan pil status di kanan.

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../data/auth_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_icons.dart';
 import '../widgets/hero_banner_carousel.dart';
@@ -50,9 +51,16 @@ class WelcomeScreen extends StatelessWidget {
 
   void _openLogin(BuildContext context) => context.push('/login');
 
-  void _openRegister(BuildContext context) => context.push('/register');
-
-  void _quickLogin(BuildContext context) => context.go('/home');
+  Future<void> _quickLogin(BuildContext context) async {
+    try {
+      await AuthRepository.instance.loginWithBiometrics();
+      if (context.mounted) context.go('/home');
+    } on AuthException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,14 +85,46 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildBrandLockup(),
-                  const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.md),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: ShaderMask(
+                          shaderCallback: (rect) => const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.white,
+                              Colors.white,
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.16, 0.84, 1.0],
+                          ).createShader(rect),
+                          blendMode: BlendMode.dstIn,
+                          child: Opacity(
+                            opacity: 0.92,
+                            child: Image.asset(
+                              'assets/images/welcome_center_bg.jpg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        child: _buildBrandLockup(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: _buildMenuRow(),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.lg),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: _buildAuthActions(context),
@@ -137,33 +177,39 @@ class WelcomeScreen extends StatelessWidget {
       children: [
         Image.asset(
           'assets/images/flovig_logo.png',
-          width: 88,
-          height: 88,
+          width: 72,
+          height: 72,
           fit: BoxFit.contain,
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: 4),
         Text(
-          'Flovig',
+          'flovig',
           style: GoogleFonts.spaceGrotesk(
-            color: AppColors.grey900,
-            fontSize: 32,
+            color: AppColors.primary600,
+            fontSize: 38,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.6,
+            letterSpacing: -1.0,
+            height: 1.0,
           ),
         ),
         const SizedBox(height: 6),
-        Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: AppColors.accent400,
-            borderRadius: BorderRadius.circular(AppRadius.full),
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Project & Team Management',
-          style: TextStyle(color: AppColors.grey500, fontSize: 12.5, fontWeight: FontWeight.w500),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 28,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: AppColors.accent400,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'by PT Arunika Solusi Inovasi',
+              style: TextStyle(color: AppColors.grey900, fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
       ],
     );
@@ -188,22 +234,37 @@ class WelcomeScreen extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 56,
-          height: 56,
+          width: 58,
+          height: 58,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: menu.accent.withValues(alpha: 0.14),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: menu.accent.withValues(alpha: 0.25), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: SvgPicture.asset(menu.asset, fit: BoxFit.contain),
         ),
         const SizedBox(height: 8),
-        Text(
-          menu.title,
-          style: const TextStyle(
-            color: AppColors.grey700,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            menu.title,
+            style: const TextStyle(
+              color: AppColors.grey900,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -254,27 +315,6 @@ class WelcomeScreen extends StatelessWidget {
                   AppIconType.fingerprint,
                   color: AppColors.accent400,
                   size: 24,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Belum punya akun? ',
-              style: TextStyle(color: AppColors.grey700, fontSize: 13),
-            ),
-            GestureDetector(
-              onTap: () => _openRegister(context),
-              child: const Text(
-                'Daftar',
-                style: TextStyle(
-                  color: AppColors.primary600,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
                 ),
               ),
             ),

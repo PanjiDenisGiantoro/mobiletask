@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'auth_repository.dart';
 import '../utils/ph_format.dart';
 import 'ph_models.dart';
@@ -36,6 +38,46 @@ class PhStore extends ChangeNotifier {
 
   // ------------------------------------------------------------ proyek
   final List<Project> projects = [];
+  final Set<int> favoriteProjectIds = {};
+  bool _favoritesLoaded = false;
+  static const _favStorageKey = 'ph_favorite_projects';
+
+  bool isFavoriteProject(int projectId) => favoriteProjectIds.contains(projectId);
+
+  Future<void> loadFavoriteProjects() async {
+    if (_favoritesLoaded) return;
+    _favoritesLoaded = true;
+    try {
+      const storage = FlutterSecureStorage();
+      final raw = await storage.read(key: _favStorageKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          favoriteProjectIds
+            ..clear()
+            ..addAll(decoded.map((e) => int.tryParse('$e')).whereType<int>());
+          notifyListeners();
+        }
+      }
+    } catch (_) {
+      // Abaikan bila storage tidak tersedia
+    }
+  }
+
+  Future<void> toggleFavoriteProject(int projectId) async {
+    if (favoriteProjectIds.contains(projectId)) {
+      favoriteProjectIds.remove(projectId);
+    } else {
+      favoriteProjectIds.add(projectId);
+    }
+    notifyListeners();
+    try {
+      const storage = FlutterSecureStorage();
+      await storage.write(key: _favStorageKey, value: jsonEncode(favoriteProjectIds.toList()));
+    } catch (_) {
+      // Abaikan bila storage tidak tersedia
+    }
+  }
   // ID lokal dimulai jauh di atas ID server supaya tidak bentrok.
   int _id = 1000000;
   int nextId() => _id++;

@@ -32,11 +32,26 @@ class PhField {
   });
 }
 
-/// File yang dipilih lewat field [PhFieldType.file].
+/// File yang dipilih lewat field [PhFieldType.file] atau pemilih lampiran.
 class PhPickedFile {
   final String name;
   final List<int> bytes;
   const PhPickedFile(this.name, this.bytes);
+}
+
+/// Buka pemilih berkas/gambar dan kembalikan [PhPickedFile] bila dipilih.
+Future<PhPickedFile?> pickPhFile([BuildContext? context]) async {
+  try {
+    final x = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (x == null) return null;
+    final bytes = await x.readAsBytes();
+    return PhPickedFile(x.name, bytes);
+  } catch (_) {
+    if (context != null && context.mounted) {
+      phToast(context, 'Galeri tidak dapat dibuka di perangkat ini');
+    }
+    return null;
+  }
 }
 
 class PhFormConfig {
@@ -216,18 +231,56 @@ class _PhFormScreenState extends State<PhFormScreen> {
 
   InputDecoration _decoration(PhField f, {Widget? suffix}) => InputDecoration(
         filled: true,
-        fillColor: AppColors.grey100,
+        fillColor: f.readOnly ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC),
         hintText: f.hint.isEmpty ? null : f.hint,
+        hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
         errorText: _errors[f.key],
+        errorStyle: const TextStyle(fontSize: 11.5, color: Color(0xFFDC2626), fontWeight: FontWeight.w500),
         suffixIcon: suffix,
         suffixText: f.unit.isEmpty ? null : f.unit,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.medium), borderSide: BorderSide.none),
+        suffixStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF4444)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
       );
 
   Widget _label(PhField f) => Padding(
-        padding: const EdgeInsets.only(bottom: 6, top: AppSpacing.md),
-        child: Text('${f.label}${f.required ? ' *' : ''}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.grey700)),
+        padding: const EdgeInsets.only(bottom: 6, top: 14),
+        child: RichText(
+          text: TextSpan(
+            text: f.label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+            children: [
+              if (f.required)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800),
+                ),
+            ],
+          ),
+        ),
       );
 
   Widget _field(PhField f) {
@@ -242,6 +295,7 @@ class _PhFormScreenState extends State<PhFormScreen> {
             readOnly: f.readOnly,
             minLines: f.type == PhFieldType.multiline ? 3 : 1,
             maxLines: f.type == PhFieldType.multiline ? 6 : 1,
+            style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
             keyboardType: f.type == PhFieldType.number ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
             decoration: _decoration(f),
             onChanged: (v) => _set(f.key, v),
@@ -254,8 +308,12 @@ class _PhFormScreenState extends State<PhFormScreen> {
           TextField(
             controller: _controllers[f.key],
             readOnly: true,
+            style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
             onTap: () => _pickDate(f),
-            decoration: _decoration(f, suffix: const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.grey500)),
+            decoration: _decoration(
+              f,
+              suffix: const Icon(Icons.calendar_today_outlined, size: 17, color: Color(0xFF2563EB)),
+            ),
           ),
         ]);
       case PhFieldType.time:
@@ -264,19 +322,66 @@ class _PhFormScreenState extends State<PhFormScreen> {
           TextField(
             controller: _controllers[f.key],
             readOnly: true,
+            style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
             onTap: () => _pickTime(f),
-            decoration: _decoration(f, suffix: const Icon(Icons.access_time_rounded, size: 18, color: AppColors.grey500)),
+            decoration: _decoration(
+              f,
+              suffix: const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF2563EB)),
+            ),
           ),
         ]);
       case PhFieldType.file:
+        final fileName = '${_values[f.key] ?? ''}'.trim();
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _label(f),
-          TextField(
-            controller: _controllers[f.key],
-            readOnly: true,
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
             onTap: () => _pickFile(f),
-            decoration: _decoration(f, suffix: const Icon(Icons.attach_file_rounded, size: 18, color: AppColors.grey500)).copyWith(hintText: f.hint.isEmpty ? 'Pilih berkas' : f.hint),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _errors[f.key] != null ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Choose File',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      fileName.isEmpty ? (f.hint.isEmpty ? 'Belum ada berkas dipilih' : f.hint) : fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: fileName.isEmpty ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
+                        fontWeight: fileName.isEmpty ? FontWeight.w400 : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.attach_file_rounded, size: 17, color: Color(0xFF64748B)),
+                ],
+              ),
+            ),
           ),
+          if (_errors[f.key] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 5, left: 12),
+              child: Text(_errors[f.key]!, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 11.5)),
+            ),
         ]);
       case PhFieldType.select:
         final valid = f.options.any((o) => o.$1 == _values[f.key]);
@@ -285,8 +390,13 @@ class _PhFormScreenState extends State<PhFormScreen> {
           DropdownButtonFormField<String>(
             initialValue: valid ? _values[f.key] as String : null,
             isExpanded: true,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B)),
+            style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
             decoration: _decoration(f),
-            items: [for (final o in f.options) DropdownMenuItem(value: o.$1, child: Text(o.$2, overflow: TextOverflow.ellipsis))],
+            items: [
+              for (final o in f.options)
+                DropdownMenuItem(value: o.$1, child: Text(o.$2, overflow: TextOverflow.ellipsis)),
+            ],
             onChanged: f.readOnly ? null : (v) => _set(f.key, v ?? ''),
           ),
         ]);
@@ -300,10 +410,14 @@ class _PhFormScreenState extends State<PhFormScreen> {
             children: [
               for (final o in f.options)
                 FilterChip(
-                  label: Text(o.$2),
+                  label: Text(o.$2, style: const TextStyle(fontSize: 12)),
                   selected: selected.contains(o.$1),
-                  selectedColor: AppColors.primary50,
-                  checkmarkColor: AppColors.primary700,
+                  selectedColor: const Color(0xFFEFF6FF),
+                  backgroundColor: const Color(0xFFF8FAFC),
+                  side: BorderSide(
+                    color: selected.contains(o.$1) ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+                  ),
+                  checkmarkColor: const Color(0xFF2563EB),
                   onSelected: (on) {
                     final next = [...selected];
                     on ? next.add(o.$1) : next.remove(o.$1);
@@ -312,27 +426,36 @@ class _PhFormScreenState extends State<PhFormScreen> {
                 ),
             ],
           ),
-          if (_errors[f.key] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_errors[f.key]!, style: const TextStyle(color: AppColors.error, fontSize: 12))),
+          if (_errors[f.key] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(_errors[f.key]!, style: const TextStyle(color: Color(0xFFDC2626), fontSize: 11.5)),
+            ),
         ]);
       case PhFieldType.toggle:
         return Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          padding: const EdgeInsets.only(top: 14),
           child: Container(
-            decoration: BoxDecoration(color: AppColors.grey100, borderRadius: BorderRadius.circular(AppRadius.medium)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
             child: Material(
               type: MaterialType.transparency,
               child: SwitchListTile(
+                activeThumbColor: const Color(0xFF2563EB),
                 value: _values[f.key] == true,
                 onChanged: (v) => _set(f.key, v),
-                title: Text(f.label, style: const TextStyle(fontSize: 14)),
-                subtitle: f.hint.isEmpty ? null : Text(f.hint, style: const TextStyle(fontSize: 12)),
+                title: Text(f.label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                subtitle: f.hint.isEmpty ? null : Text(f.hint, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
               ),
             ),
           ),
         );
       case PhFieldType.info:
         return Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.md),
+          padding: const EdgeInsets.only(top: 14),
           child: widget.config.preview?.call(_values) ?? const SizedBox.shrink(),
         );
     }
@@ -342,23 +465,123 @@ class _PhFormScreenState extends State<PhFormScreen> {
   Widget build(BuildContext context) {
     final c = widget.config;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: phAppBar(c.title),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.md),
-                children: [
-                  if (c.note.isNotEmpty) Text(c.note, style: const TextStyle(fontSize: 12.5, color: AppColors.grey700, height: 1.4)),
-                  for (final f in c.fields) _field(f),
-                ],
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 680),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (c.note.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(13),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFDBEAFE)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF2563EB)),
+                                const SizedBox(width: 9),
+                                Expanded(
+                                  child: Text(
+                                    c.note,
+                                    style: const TextStyle(fontSize: 12.5, color: Color(0xFF1E3A8A), height: 1.4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final f in c.fields) _field(f),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: PhButton(_saving ? 'Menyimpan...' : c.saveLabel, onPressed: _saving ? null : _submit, color: AppColors.primary700),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 680),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _saving ? null : () => context.pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text(
+                            'Batal',
+                            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton(
+                          onPressed: _saving ? null : _submit,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _saving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Text(
+                                  c.saveLabel,
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),

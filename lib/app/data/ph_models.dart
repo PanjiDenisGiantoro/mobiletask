@@ -5,7 +5,25 @@ class PhUser {
   final String id;
   final String name;
   final bool isClient;
-  const PhUser(this.id, this.name, {this.isClient = false});
+  final bool isActive;
+  final String email;
+  final String phone;
+  final String photoUrl;
+  final List<String> images;
+  final String joinedAt;
+  final String role;
+  const PhUser(
+    this.id,
+    this.name, {
+    this.isClient = false,
+    this.isActive = true,
+    this.email = '',
+    this.phone = '',
+    this.photoUrl = '',
+    this.images = const [],
+    this.joinedAt = '',
+    this.role = '',
+  });
 }
 
 // ---------------------------------------------------------------- Proyek
@@ -40,6 +58,8 @@ class Sprint {
   String startDate;
   String endDate;
   String milestone;
+  String leadId;
+  String priority;
   Sprint({
     required this.id,
     this.milestoneId = 0,
@@ -49,6 +69,8 @@ class Sprint {
     this.startDate = '',
     this.endDate = '',
     this.milestone = '',
+    this.leadId = '',
+    this.priority = '',
   });
 }
 
@@ -57,7 +79,16 @@ class ProjectMember {
   String userId;
   String role;
   int maxHoursPerDay;
-  ProjectMember({required this.id, required this.userId, required this.role, this.maxHoursPerDay = 8});
+  String photoUrl;
+  List<String> images;
+  ProjectMember({
+    required this.id,
+    required this.userId,
+    required this.role,
+    this.maxHoursPerDay = 8,
+    this.photoUrl = '',
+    this.images = const [],
+  });
 }
 
 class BudgetEntry {
@@ -111,6 +142,11 @@ class ProjectFile {
   String mimeType;
   int size;
   String description;
+  String type; // file | link
+  String taskId;
+  String taskTitle;
+  String uploaderId;
+  String createdAt;
   ProjectFile({
     required this.id,
     this.url = '',
@@ -119,7 +155,15 @@ class ProjectFile {
     this.mimeType = 'application/octet-stream',
     this.size = 0,
     this.description = '',
+    this.type = 'file',
+    this.taskId = '',
+    this.taskTitle = '',
+    this.uploaderId = '',
+    this.createdAt = '',
   });
+
+  bool get isLink => type == 'link';
+  bool get fromTask => taskId.isNotEmpty || taskTitle.isNotEmpty;
 }
 
 class TimeLog {
@@ -147,6 +191,40 @@ class TimeLog {
   });
 }
 
+/// Lampiran dokumen di Knowledge Base (beda tabel dari [ProjectFile]).
+class KbAttachment {
+  final int id;
+  String name;
+  String url;
+  int size;
+  KbAttachment({required this.id, required this.name, this.url = '', this.size = 0});
+}
+
+/// Satu dokumen Knowledge Base & Documentation (BRD/PRD/FSD/MOM/Tech
+/// Spec/Onboarding) milik proyek.
+class KbDocument {
+  final int id;
+  String category; // brd | prd | fsd | mom | tech_spec | onboarding
+  String title;
+  String summary;
+  String body;
+  int version;
+  String authorId;
+  String createdAt;
+  final List<KbAttachment> attachments;
+  KbDocument({
+    required this.id,
+    this.category = 'brd',
+    required this.title,
+    this.summary = '',
+    this.body = '',
+    this.version = 1,
+    this.authorId = '',
+    this.createdAt = '',
+    List<KbAttachment>? attachments,
+  }) : attachments = attachments ?? [];
+}
+
 class Project {
   final int id;
   String name;
@@ -164,6 +242,7 @@ class Project {
   int progress;
   // Field khusus tampilan daftar proyek di aplikasi mobile.
   String category;
+  List<String> images; // maks. 4 gambar dari server
   int totalTasks;
   int doneTasks;
   List<int> memberColors;
@@ -174,6 +253,7 @@ class Project {
   final List<Risk> risks;
   final List<ProjectFile> files;
   final List<TimeLog> timeLogs;
+  final List<KbDocument> kbDocuments;
 
   Project({
     required this.id,
@@ -191,6 +271,7 @@ class Project {
     this.meetAt = '',
     this.progress = 0,
     this.category = 'Design',
+    this.images = const [],
     this.totalTasks = 0,
     this.doneTasks = 0,
     this.memberColors = const [0xFF0F7BD4],
@@ -201,13 +282,18 @@ class Project {
     List<Risk>? risks,
     List<ProjectFile>? files,
     List<TimeLog>? timeLogs,
+    List<KbDocument>? kbDocuments,
   })  : milestones = milestones ?? [],
         sprints = sprints ?? [],
         members = members ?? [],
         budgetEntries = budgetEntries ?? [],
         risks = risks ?? [],
         files = files ?? [],
-        timeLogs = timeLogs ?? [];
+        timeLogs = timeLogs ?? [],
+        kbDocuments = kbDocuments ?? [];
+
+  /// Gambar utama (sampul) proyek, dipakai sebagai logo di kartu/daftar.
+  String get logoUrl => images.isNotEmpty ? images.first : '';
 
   double get income => budgetEntries.where((e) => e.type == 'income').fold(0.0, (s, e) => s + e.amount);
   double get expense => budgetEntries.where((e) => e.type == 'expense').fold(0.0, (s, e) => s + e.amount);
@@ -245,53 +331,68 @@ class TicketHistory {
   final String oldValue;
   final String newValue;
   final String at;
-  const TicketHistory(this.actorId, this.field, this.oldValue, this.newValue, this.at);
+  final String description;
+  const TicketHistory(this.actorId, this.field, this.oldValue, this.newValue, this.at, {this.description = ''});
 }
 
 class Ticket {
   final int id;
+  int projectId;
   String projectName;
   String milestone;
   String title;
   String description;
   String solution;
   String type; // bug | issue | enhancement | security | performance
-  String errorCategory; // frontend | backend | database | api | infrastructure | integration | configuration | other
+  String errorCategory; // '' | frontend | backend | database | api | infrastructure | integration | configuration | other
   String priority; // critical | high | medium | low
   String status; // open | assigned | in_progress | pending_review | resolved | closed | reopened
   String reporterId;
   String assigneeId;
+  List<String> assigneeIds;
+  String createdAt;
   String slaDueAt;
   bool slaBreached;
   bool slaPaused;
   bool escalated;
   String resolvedAt;
+  String meetLink;
+  int commentsCount;
+  final List<KbAttachment> attachments;
   final List<TicketChecklistItem> checklist;
   final List<TaskComment> comments;
   final List<TicketHistory> history;
 
   Ticket({
     required this.id,
+    this.projectId = 0,
     required this.projectName,
     required this.title,
     required this.description,
     this.milestone = '',
     this.solution = '',
     this.type = 'bug',
-    this.errorCategory = 'frontend',
+    this.errorCategory = '',
     this.priority = 'medium',
     this.status = 'open',
     this.reporterId = '',
     this.assigneeId = '',
+    List<String>? assigneeIds,
+    this.createdAt = '',
     this.slaDueAt = '',
     this.slaBreached = false,
     this.slaPaused = false,
     this.escalated = false,
     this.resolvedAt = '',
+    this.meetLink = '',
+    this.commentsCount = 0,
+    List<KbAttachment>? attachments,
     List<TicketChecklistItem>? checklist,
     List<TaskComment>? comments,
     List<TicketHistory>? history,
-  })  : checklist = checklist ?? [],
+  })  : assigneeIds = assigneeIds ?? (assigneeId.isEmpty ? [] : [assigneeId]),
+        attachments = attachments ?? [],
+        checklist = checklist ?? [],
         comments = comments ?? [],
         history = history ?? [];
 }

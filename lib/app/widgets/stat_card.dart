@@ -47,9 +47,9 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.grey700,
+              color: context.colors.textSecondary,
             ),
           ),
         ],

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "836486190227",
+    "project_id": "flovig-583ec",
+    "storage_bucket": "flovig-583ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836486190227:android:db765e3a55c707e81e2966",
+        "android_client_info": {
+          "package_name": "com.flovig.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBLxDvNGM4syGm44ou--RlCZUsm5CU48o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'auth_repository.dart';
 import 'ph_api.dart';
 import 'ph_models.dart';
+import 'ph_remote.dart';
 import 'ph_store.dart';
 
 /// Satu percakapan di daftar chat (proyek, DM, atau forum).
@@ -69,10 +70,10 @@ class ChatRepository extends ChangeNotifier {
       directs = [for (final r in (j['dms'] as List? ?? const [])) room('dm', r as Map<String, dynamic>)]
         ..sort((a, b) => (b.lastAt.isEmpty ? 0 : 1).compareTo(a.lastAt.isEmpty ? 0 : 1));
       forums = [for (final r in (j['forums'] as List? ?? const [])) room('forum', r as Map<String, dynamic>)];
-      peers = [for (final p in (j['allPeers'] as List? ?? const [])) PhUser('${p['id']}', '${p['name']}')];
-      for (final p in peers) {
-        _store.users.putIfAbsent(p.id, () => p);
-      }
+      peers = [
+        for (final p in (j['allPeers'] as List? ?? const []).whereType<Map<dynamic, dynamic>>())
+          _store.users[_store.upsertPhUser(p)]!,
+      ];
     } on ApiException catch (e) {
       error = e.message;
     } finally {
@@ -178,8 +179,7 @@ class ChatRepository extends ChangeNotifier {
 
   ChatMessage _message(Map<String, dynamic> j) {
     final user = j['user'] as Map? ?? const {};
-    final uid = '${user['id'] ?? ''}';
-    if (uid.isNotEmpty) _store.users.putIfAbsent(uid, () => PhUser(uid, '${user['name'] ?? '-'}'));
+    final uid = user.isEmpty ? '' : _store.upsertPhUser(user);
     final parent = j['parent'] as Map?;
     final atts = (j['attachments'] as List? ?? const []);
     final m = ChatMessage(

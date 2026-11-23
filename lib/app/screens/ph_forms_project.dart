@@ -147,16 +147,16 @@ void openMemberForm(BuildContext context, Project project) {
       title: 'Tambah Anggota',
       doneMessage: 'Anggota ditambahkan',
       fields: [
-        PhField('userIds', 'Pengguna', type: PhFieldType.multi, options: candidates),
+        PhField('userId', 'Pengguna', type: _sel, options: candidates),
         const PhField('role', 'Peran di proyek', hint: 'Contoh: Frontend Developer'),
         const PhField('maxHoursPerDay', 'Maks jam per hari', type: _num, unit: 'jam', initial: 8),
       ],
       onSave: (v) async {
-        final ids = [...(v['userIds'] as List<String>)];
-        if (ids.isEmpty) return 'Pilih minimal satu pengguna';
+        final id = '${v['userId'] ?? ''}';
+        if (id.isEmpty) return 'Pilih pengguna';
         final hours = int.tryParse('${v['maxHoursPerDay']}') ?? 8;
         if (hours < 1 || hours > 24) return 'Jam per hari harus 1 sampai 24';
-        await _store.addMembers(project, ids, '${v['role'] ?? ''}', hours);
+        await _store.addMembers(project, [id], '${v['role'] ?? ''}', hours);
         return null;
       },
     ),
@@ -251,6 +251,56 @@ void openFileForm(BuildContext context, Project project) {
         final f = v['fileFile'] as PhPickedFile?;
         if (f == null) return 'Pilih file terlebih dahulu';
         await _store.uploadFile(project, '${v['folder']}', '${v['description'] ?? ''}', ApiFile('files[]', f.name, f.bytes));
+        return null;
+      },
+    ),
+  );
+}
+
+void openLinkForm(BuildContext context, Project project) {
+  openPhForm(
+    context,
+    PhFormConfig(
+      title: 'Tambah Link',
+      note: 'Simpan tautan Figma, GitHub, dokumen, dsb. di koleksi file proyek ini.',
+      doneMessage: 'Link ditambahkan',
+      fields: const [
+        PhField('folder', 'Folder', required: true, hint: 'Contoh: Desain', initial: 'General'),
+        PhField('name', 'Nama', required: true, hint: 'Contoh: GitHub Repository'),
+        PhField('url', 'URL', required: true, hint: 'https://...'),
+        PhField('description', 'Deskripsi', type: _area),
+      ],
+      onSave: (v) async {
+        final url = '${v['url'] ?? ''}'.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) return 'URL harus diawali http:// atau https://';
+        await _store.addLink(project, '${v['folder']}', '${v['name']}', url, '${v['description'] ?? ''}');
+        return null;
+      },
+    ),
+  );
+}
+
+void openKbDocumentForm(BuildContext context, Project project, {KbDocument? doc}) {
+  openPhForm(
+    context,
+    PhFormConfig(
+      title: doc == null ? 'Tambah Dokumen' : 'Ubah Dokumen',
+      doneMessage: doc == null ? 'Dokumen ditambahkan' : 'Dokumen diperbarui',
+      fields: [
+        PhField('category', 'Kategori', type: _sel, options: statusOptions('kb_category'), initial: doc?.category ?? 'brd'),
+        PhField('title', 'Judul', required: true, initial: doc?.title),
+        PhField('summary', 'Ringkasan', initial: doc?.summary),
+        PhField('body', 'Isi dokumen', type: _area, initial: doc?.body),
+        const PhField('attachment', 'Lampiran file (opsional)', type: PhFieldType.file),
+      ],
+      onSave: (v) async {
+        final f = v['attachmentFile'] as PhPickedFile?;
+        await _store.saveKbDocument(
+          project,
+          doc,
+          {'category': v['category'], 'title': v['title'], 'summary': v['summary'], 'body': v['body']},
+          attachment: f == null ? null : ApiFile('attachments[]', f.name, f.bytes),
+        );
         return null;
       },
     ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-const _monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 const monthsLong = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
@@ -25,7 +25,7 @@ String fmtDate(String? iso) {
   if (iso == null || iso.length < 10) return '-';
   final p = iso.substring(0, 10).split('-');
   final m = int.tryParse(p[1]) ?? 1;
-  return '${int.parse(p[2])} ${_monthsShort[m - 1]} ${p[0]}';
+  return '${int.parse(p[2])} ${monthsShort[m - 1]} ${p[0]}';
 }
 
 /// "2026-05-20 10:30" -> "20 Mei 2026, 10:30".
@@ -37,6 +37,47 @@ String fmtDateTime(String? iso) {
 
 String isoDate(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+/// "2026-11-10 10:30" -> "5 menit lalu" / "2 jam lalu" / "3 hari lalu".
+/// Lebih dari 30 hari jatuh balik ke [fmtDate].
+String timeAgo(String? iso) {
+  if (iso == null || iso.isEmpty) return '-';
+  final d = DateTime.tryParse(iso);
+  if (d == null) return '-';
+  final diff = DateTime.now().difference(d);
+  if (diff.inSeconds < 0) return fmtDate(iso);
+  if (diff.inSeconds < 60) return '${diff.inSeconds} detik lalu';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+  if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+  if (diff.inDays < 30) return '${diff.inDays} hari lalu';
+  if (diff.inDays < 365) return '${(diff.inDays / 30).floor()} bulan lalu';
+  return fmtDate(iso);
+}
+
+/// Rentang tanggal untuk filter "Bulan ini" (1 s.d. akhir bulan berjalan).
+DateTimeRange currentMonthRange([DateTime? now]) {
+  final n = now ?? DateTime.now();
+  return DateTimeRange(start: DateTime(n.year, n.month, 1), end: DateTime(n.year, n.month + 1, 0));
+}
+
+/// "1 – 30 Nov 2026" atau "28 Nov – 5 Des 2026" kalau beda bulan.
+String fmtDateRange(DateTime start, DateTime end) {
+  if (start.year == end.year && start.month == end.month) {
+    return '${start.day} – ${end.day} ${monthsShort[start.month - 1]} ${start.year}';
+  }
+  if (start.year == end.year) {
+    return '${start.day} ${monthsShort[start.month - 1]} – ${end.day} ${monthsShort[end.month - 1]} ${start.year}';
+  }
+  return '${start.day} ${monthsShort[start.month - 1]} ${start.year} – ${end.day} ${monthsShort[end.month - 1]} ${end.year}';
+}
+
+/// Cek tanggal ISO ("yyyy-MM-dd...") jatuh di dalam [range] (inklusif, berbasis hari).
+bool inDateRange(String isoDateStr, DateTimeRange range) {
+  final d = DateTime.tryParse(isoDateStr);
+  if (d == null) return false;
+  final day = DateTime(d.year, d.month, d.day);
+  return !day.isBefore(range.start) && !day.isAfter(range.end);
+}
 
 String hhmm(DateTime d) =>
     '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
@@ -152,6 +193,14 @@ final Map<String, Map<String, StatusStyle>> _statusTable = {
     'sakit': _s('Sakit', _warn),
     'cuti': _s('Cuti', _info),
     'libur': _s('Libur', _grey),
+  },
+  'kb_category': {
+    'brd': const StatusStyle('BRD', Color(0xFF8E24AA), Color(0xFFF3E5F5)),
+    'prd': const StatusStyle('PRD', Color(0xFF3949AB), Color(0xFFE8EAF6)),
+    'fsd': const StatusStyle('FSD', Color(0xFF5E35B1), Color(0xFFEDE7F6)),
+    'mom': const StatusStyle('MOM', Color(0xFF00897B), Color(0xFFE0F2F1)),
+    'tech_spec': const StatusStyle('Tech Spec', Color(0xFFFB8C00), AppColors.warningBg),
+    'onboarding': const StatusStyle('Onboarding', Color(0xFF00ACC1), Color(0xFFE0F7FA)),
   },
 };
 
