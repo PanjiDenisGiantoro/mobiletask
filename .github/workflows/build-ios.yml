@@ -1,0 +1,55 @@
+name: Build Flovig iOS (.ipa)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, main]
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Ensure iOS 13.0+ Podfile & install CocoaPods
+        run: |
+          flutter precache --ios
+          if [ ! -f ios/Podfile ]; then
+            flutter build ios --config-only --no-codesign || true
+          fi
+          if [ -f ios/Podfile ]; then
+            sed -i '' "s/# platform :ios, '.*'/platform :ios, '13.0'/" ios/Podfile || true
+            sed -i '' "s/platform :ios, '12.0'/platform :ios, '13.0'/" ios/Podfile || true
+          fi
+          cd ios
+          pod install --repo-update
+
+      - name: Build unsigned iOS release
+        run: flutter build ios --release --no-codesign
+
+      - name: Package Payload into Flovig-unsigned.ipa
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ipa/Payload/Runner.app
+          cd build/ipa
+          zip -r -y Flovig-unsigned.ipa Payload
+          ls -lh Flovig-unsigned.ipa
+
+      - name: Upload Flovig-unsigned.ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Flovig-iOS-unsigned-ipa
+          path: build/ipa/Flovig-unsigned.ipa
+          retention-days: 14
