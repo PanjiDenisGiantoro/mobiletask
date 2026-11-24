@@ -1,0 +1,1126 @@
+# Flovig / ProjectHub Pro API
+
+###
+# group: Auth
+# @name Login
+POST {{base_url}}/auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+
+> {%
+    // TODO: migrate to HTTP Client Response handler API
+    // if (pm.response.code === 200) {
+    //   const body = pm.response.json();
+    //   if (body.token) pm.collectionVariables.set('token', body.token);
+    // }
+%}
+
+###
+# group: Auth
+# @name Refresh session
+POST {{base_url}}/auth/refresh
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+# group: Auth
+# @name Logout
+POST {{base_url}}/auth/logout
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+# group: Projects
+# @name List projects
+GET {{base_url}}/projects?
+    page=1
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Get project detail
+GET {{base_url}}/projects/{{project_id}}
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Create project
+POST {{base_url}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Proyek Baru",
+  "description": "",
+  "client_id": null,
+  "manager_id": null,
+  "status": "active",
+  "start_date": "2026-11-01",
+  "end_date": "2026-12-31",
+  "budget": 0,
+  "budget_alert_threshold": 80,
+  "github_repo_url": null
+}
+
+###
+# group: Projects
+# @name Update project
+PUT {{base_url}}/projects/{{project_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Proyek Baru",
+  "description": "",
+  "client_id": null,
+  "manager_id": null,
+  "status": "active",
+  "start_date": "2026-11-01",
+  "end_date": "2026-12-31",
+  "budget": 0,
+  "budget_alert_threshold": 80,
+  "github_repo_url": null
+}
+
+###
+# group: Projects
+# @name List milestones
+GET {{base_url}}/projects/{{project_id}}/milestones
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Create milestone
+POST {{base_url}}/projects/{{project_id}}/milestones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Milestone 1",
+  "description": "",
+  "status": "pending",
+  "start_date": null,
+  "due_date": null,
+  "assigned_to": null
+}
+
+###
+# group: Projects
+# @name Update milestone
+PUT {{base_url}}/projects/{{project_id}}/milestones/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Milestone 1",
+  "description": "",
+  "status": "completed",
+  "start_date": null,
+  "due_date": null,
+  "assigned_to": null
+}
+
+###
+# group: Projects
+# @name List sprints
+GET {{base_url}}/projects/{{project_id}}/sprints
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Create sprint
+POST {{base_url}}/projects/{{project_id}}/sprints
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sprint 1",
+  "start_date": null,
+  "end_date": null
+}
+
+###
+# group: Projects
+# @name Update sprint
+PUT {{base_url}}/projects/{{project_id}}/sprints/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Sprint 1"
+}
+
+###
+# group: Projects
+# @name Delete sprint
+DELETE {{base_url}}/projects/{{project_id}}/sprints/1
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Get budget
+GET {{base_url}}/projects/{{project_id}}/budget
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Add budget entry
+POST {{base_url}}/projects/{{project_id}}/budget
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "expense",
+  "amount": 100000,
+  "description": "",
+  "date": null
+}
+
+###
+# group: Projects
+# @name Delete budget entry
+DELETE {{base_url}}/projects/{{project_id}}/budget/1
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Set budget alert threshold
+PATCH {{base_url}}/projects/{{project_id}}/budget/threshold
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "budget_alert_threshold": 80
+}
+
+###
+# group: Projects
+# @name List risks
+GET {{base_url}}/projects/{{project_id}}/risks
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Create risk
+POST {{base_url}}/projects/{{project_id}}/risks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "description": "",
+  "impact": "medium",
+  "status": "open"
+}
+
+###
+# group: Projects
+# @name Update risk
+PUT {{base_url}}/projects/{{project_id}}/risks/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "mitigated"
+}
+
+###
+# group: Projects
+# @name Delete risk
+DELETE {{base_url}}/projects/{{project_id}}/risks/1
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name List files
+GET {{base_url}}/projects/{{project_id}}/files
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Upload file
+POST {{base_url}}/projects/{{project_id}}/files
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="folder"
+
+
+--WebAppBoundary
+Content-Disposition: form-data; name="description"
+
+
+--WebAppBoundary
+Content-Disposition: form-data; name="files[]"; filename=""
+
+< 
+--WebAppBoundary
+
+###
+# group: Projects
+# @name Delete file
+DELETE {{base_url}}/projects/{{project_id}}/files/1
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Get timesheet
+GET {{base_url}}/projects/{{project_id}}/timesheet
+Authorization: Bearer {{token}}
+
+###
+# group: Projects
+# @name Add team member
+POST {{base_url}}/projects/{{project_id}}/team
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "role": "member",
+  "max_hours_per_day": 8
+}
+
+###
+# group: Projects
+# @name Remove team member
+DELETE {{base_url}}/projects/{{project_id}}/team/{{user_id}}
+Authorization: Bearer {{token}}
+
+###
+# group: Tasks
+# @name List tasks of project
+GET {{base_url}}/projects/{{project_id}}/tasks?
+    page=1
+Authorization: Bearer {{token}}
+
+###
+# group: Tasks
+# @name Create task
+POST {{base_url}}/projects/{{project_id}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Tugas baru",
+  "description": "",
+  "assigned_to": null,
+  "milestone_id": null,
+  "sprint_id": null,
+  "priority": "medium",
+  "start_date": null,
+  "due_date": null,
+  "estimated_hours": null,
+  "story_points": null
+}
+
+###
+# group: Tasks
+# @name Update task
+PUT {{base_url}}/projects/{{project_id}}/tasks/{{task_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Tugas baru",
+  "description": "",
+  "assigned_to": null,
+  "milestone_id": null,
+  "sprint_id": null,
+  "priority": "medium",
+  "start_date": null,
+  "due_date": null,
+  "estimated_hours": null,
+  "story_points": null,
+  "status": "in_progress"
+}
+
+###
+# group: Tasks
+# @name Set task status
+PUT {{base_url}}/projects/{{project_id}}/tasks/{{task_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "done"
+}
+
+###
+# group: Tasks
+# @name Delete task
+DELETE {{base_url}}/projects/{{project_id}}/tasks/{{task_id}}
+Authorization: Bearer {{token}}
+
+###
+# group: Tasks
+# @name List task comments
+GET {{base_url}}/projects/{{project_id}}/tasks/{{task_id}}/comments
+Authorization: Bearer {{token}}
+
+###
+# group: Tasks
+# @name Add task comment
+POST {{base_url}}/projects/{{project_id}}/tasks/{{task_id}}/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Komentar"
+}
+
+###
+# group: Tasks
+# @name Add time log
+POST {{base_url}}/tasks/{{task_id}}/time-logs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-11-09",
+  "hours": 1
+}
+
+###
+# group: Tickets
+# @name List tickets of project
+GET {{base_url}}/projects/{{project_id}}/tickets?
+    page=1
+Authorization: Bearer {{token}}
+
+###
+# group: Tickets
+# @name Get ticket detail
+GET {{base_url}}/tickets/{{ticket_id}}
+Authorization: Bearer {{token}}
+
+###
+# group: Tickets
+# @name Create ticket
+POST {{base_url}}/projects/{{project_id}}/tickets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Bug baru",
+  "description": "",
+  "type": "bug",
+  "priority": "medium"
+}
+
+###
+# group: Tickets
+# @name Update ticket
+PUT {{base_url}}/tickets/{{ticket_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Bug baru",
+  "description": "",
+  "type": "bug",
+  "priority": "high"
+}
+
+###
+# group: Tickets
+# @name Assign ticket
+PUT {{base_url}}/tickets/{{ticket_id}}/assign
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "assignee_id": "{{user_id}}"
+}
+
+###
+# group: Tickets
+# @name Set ticket status
+PUT {{base_url}}/tickets/{{ticket_id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "in_progress",
+  "description": ""
+}
+
+###
+# group: Tickets
+# @name Add ticket comment
+POST {{base_url}}/tickets/{{ticket_id}}/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Komentar"
+}
+
+###
+# group: Tickets
+# @name Add checklist items
+POST {{base_url}}/tickets/{{ticket_id}}/checklists
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "body": "Langkah 1",
+      "sort_order": 0
+    }
+  ]
+}
+
+###
+# group: Tickets
+# @name Toggle checklist item
+PUT {{base_url}}/tickets/{{ticket_id}}/checklists/1/toggle
+Authorization: Bearer {{token}}
+
+###
+# group: Requests & Approvals
+# @name List requests
+GET {{base_url}}/requests?
+    page=1
+Authorization: Bearer {{token}}
+
+###
+# group: Requests & Approvals
+# @name Create request
+POST {{base_url}}/requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "{{project_id}}",
+  "title": "",
+  "description": "",
+  "type": "feature",
+  "priority": "medium"
+}
+
+###
+# group: Requests & Approvals
+# @name Approve request
+PUT {{base_url}}/requests/1/approve
+Authorization: Bearer {{token}}
+
+###
+# group: Requests & Approvals
+# @name Reject request
+PUT {{base_url}}/requests/1/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rejection_reason": ""
+}
+
+###
+# group: Requests & Approvals
+# @name Complete request
+PUT {{base_url}}/requests/1/complete
+Authorization: Bearer {{token}}
+
+###
+# group: Requests & Approvals
+# @name Decide approval
+PUT {{base_url}}/approvals/1/approve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": ""
+}
+
+###
+# group: Users
+# @name List users
+GET {{base_url}}/users?
+    page=1
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name Inbox (projects, DMs, forums)
+GET {{base_url}}/chat/inbox
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name Project chat thread
+GET {{base_url}}/projects/{{project_id}}/chat/messages?
+    after=0
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name Send project chat message
+POST {{base_url}}/projects/{{project_id}}/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Halo"
+}
+
+###
+# group: Chat
+# @name Mark project chat read
+POST {{base_url}}/projects/{{project_id}}/chat/read
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name DM thread
+GET {{base_url}}/messages/{{user_id}}/thread?
+    after=0
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name Send DM
+POST {{base_url}}/messages/{{user_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Halo"
+}
+
+###
+# group: Chat
+# @name Forum messages
+GET {{base_url}}/forums/1/messages?
+    after=0
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name Send forum message
+POST {{base_url}}/forums/1/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Halo semua"
+}
+
+###
+# group: Chat
+# @name Create forum
+POST {{base_url}}/forums
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Forum Baru",
+  "description": "",
+  "member_ids": [
+    "{{user_id}}"
+  ]
+}
+
+###
+# group: Chat
+# @name Edit message (proj/dm)
+PUT {{base_url}}/projects/{{project_id}}/chat/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Diedit"
+}
+
+###
+# group: Chat
+# @name Delete message (proj/dm)
+DELETE {{base_url}}/projects/{{project_id}}/chat/1
+Authorization: Bearer {{token}}
+
+###
+# group: Chat
+# @name React to message (project chat only)
+POST {{base_url}}/projects/{{project_id}}/chat/1/react
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "emoji": "\ud83d\udc4d"
+}
+
+###
+# group: Calendar
+# @name List calendar events
+GET {{base_url}}/calendar/events?
+    start=2026-11-01&
+    end=2026-11-30
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Get my HRIS profile/permissions
+GET {{base_url}}/hris/me
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Today's attendance
+GET {{base_url}}/hris/attendance/today
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Check-in
+POST {{base_url}}/hris/attendance/check-in
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lat": -6.200000,
+  "lng": 106.816666
+}
+
+###
+# group: HRIS - Me & Attendance
+# @name Check-out
+POST {{base_url}}/hris/attendance/check-out
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lat": -6.200000,
+  "lng": 106.816666
+}
+
+###
+# group: HRIS - Me & Attendance
+# @name Attendance history (month)
+GET {{base_url}}/hris/attendance/history?
+    year=2026&
+    month=11
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Team attendance (date)
+GET {{base_url}}/hris/attendance/team?
+    date=2026-11-09
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name List holidays (year)
+GET {{base_url}}/hris/attendance/holidays?
+    year=2026
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Create holiday
+POST {{base_url}}/hris/attendance/holidays
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-12-25",
+  "name": "Hari Natal"
+}
+
+###
+# group: HRIS - Me & Attendance
+# @name Delete holiday
+DELETE {{base_url}}/hris/attendance/holidays/1
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name List shift schedules (range)
+GET {{base_url}}/hris/attendance/schedules?
+    from=2026-11-01&
+    to=2026-11-30
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Assign shift schedule
+POST {{base_url}}/hris/attendance/schedules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "shift_id": 1,
+  "date": "2026-11-10"
+}
+
+###
+# group: HRIS - Me & Attendance
+# @name Get attendance setting
+GET {{base_url}}/hris/attendance/setting
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Me & Attendance
+# @name Update attendance setting
+PUT {{base_url}}/hris/attendance/setting
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "requires_location": true,
+  "requires_face": false
+}
+
+###
+# group: HRIS - Leave
+# @name List leave types
+GET {{base_url}}/hris/leave-types
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Leave
+# @name List leave requests
+GET {{base_url}}/hris/leaves
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Leave
+# @name Submit leave
+POST {{base_url}}/hris/leaves
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "leave_type_id": 1,
+  "start_date": "2026-11-10",
+  "end_date": "2026-11-11",
+  "reason": ""
+}
+
+###
+# group: HRIS - Leave
+# @name Approve leave
+PATCH {{base_url}}/hris/leaves/1/approve
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Leave
+# @name Reject leave
+PATCH {{base_url}}/hris/leaves/1/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rejection_reason": ""
+}
+
+###
+# group: HRIS - Leave
+# @name Cancel/delete leave
+DELETE {{base_url}}/hris/leaves/1
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Overtime
+# @name List overtimes
+GET {{base_url}}/hris/overtimes
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Overtime
+# @name Preview overtime hours/pay
+POST {{base_url}}/hris/overtimes/preview
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-11-09",
+  "start_time": "18:00",
+  "end_time": "20:00"
+}
+
+###
+# group: HRIS - Overtime
+# @name Submit overtime
+POST {{base_url}}/hris/overtimes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2026-11-09",
+  "start_time": "18:00",
+  "end_time": "20:00",
+  "reason": ""
+}
+
+###
+# group: HRIS - Overtime
+# @name Approve overtime
+PATCH {{base_url}}/hris/overtimes/1/approve
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Overtime
+# @name Reject overtime
+PATCH {{base_url}}/hris/overtimes/1/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rejection_reason": ""
+}
+
+###
+# group: HRIS - Overtime
+# @name Cancel/delete overtime
+DELETE {{base_url}}/hris/overtimes/1
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Reimbursement
+# @name List reimbursements
+GET {{base_url}}/hris/reimbursements
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Reimbursement
+# @name Submit reimbursement
+POST {{base_url}}/hris/reimbursements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "",
+  "category": "transport",
+  "amount": 50000,
+  "expense_date": "2026-11-09"
+}
+
+###
+# group: HRIS - Reimbursement
+# @name Approve reimbursement
+PATCH {{base_url}}/hris/reimbursements/1/approve
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Reimbursement
+# @name Reject reimbursement
+PATCH {{base_url}}/hris/reimbursements/1/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rejection_reason": ""
+}
+
+###
+# group: HRIS - Reimbursement
+# @name Delete reimbursement
+DELETE {{base_url}}/hris/reimbursements/1
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Kasbon
+# @name List kasbons
+GET {{base_url}}/hris/kasbons
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Kasbon
+# @name Create kasbon
+POST {{base_url}}/hris/kasbons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "jumlah": 1000000,
+  "cicilan_per_bulan": 100000,
+  "tanggal": "2026-11-09"
+}
+
+###
+# group: HRIS - Kasbon
+# @name Delete kasbon
+DELETE {{base_url}}/hris/kasbons/1
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Payroll & Bonus
+# @name List payrolls
+GET {{base_url}}/hris/payrolls
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Payroll & Bonus
+# @name Generate payroll
+POST {{base_url}}/hris/payrolls/generate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "year": 2026,
+  "month": 11
+}
+
+###
+# group: HRIS - Payroll & Bonus
+# @name Finalize payroll
+PATCH {{base_url}}/hris/payrolls/1/finalize
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Payroll & Bonus
+# @name List bonuses
+GET {{base_url}}/hris/bonuses
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Payroll & Bonus
+# @name Create bonus
+POST {{base_url}}/hris/bonuses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "year": 2026,
+  "month": 11,
+  "type": "bonus",
+  "amount": 500000,
+  "description": ""
+}
+
+###
+# group: HRIS - Payroll & Bonus
+# @name Delete bonus
+DELETE {{base_url}}/hris/bonuses/1
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Employees & Salary
+# @name List employees
+GET {{base_url}}/hris/employees
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Employees & Salary
+# @name Get employee salary
+GET {{base_url}}/hris/employees/{{user_id}}/salaries
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Employees & Salary
+# @name Create employee salary
+POST {{base_url}}/hris/employees/{{user_id}}/salaries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "gajiPokok": 5000000,
+  "tunjanganTransport": 0,
+  "tunjanganMakan": 0,
+  "tunjanganJabatan": 0,
+  "npwp": "",
+  "statusPajak": "TK/0",
+  "bpjsKesehatan": true,
+  "bpjsKetenagakerjaan": true,
+  "effectiveDate": "2026-11-09"
+}
+
+###
+# group: HRIS - Employees & Salary
+# @name Update employee salary
+PUT {{base_url}}/hris/employees/{{user_id}}/salaries/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "gajiPokok": 5500000,
+  "tunjanganTransport": 0,
+  "tunjanganMakan": 0,
+  "tunjanganJabatan": 0,
+  "npwp": "",
+  "statusPajak": "TK/0",
+  "bpjsKesehatan": true,
+  "bpjsKetenagakerjaan": true,
+  "effectiveDate": "2026-11-09"
+}
+
+###
+# group: HRIS - Employees & Salary
+# @name Set employee shift
+PUT {{base_url}}/hris/employees/{{user_id}}/shift
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shift_id": 1
+}
+
+###
+# group: HRIS - Shifts
+# @name List shifts
+GET {{base_url}}/hris/shifts
+Authorization: Bearer {{token}}
+
+###
+# group: HRIS - Shifts
+# @name Create shift
+POST {{base_url}}/hris/shifts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Shift Pagi",
+  "start_time": "08:00",
+  "end_time": "17:00",
+  "break_start": "12:00",
+  "break_end": "13:00",
+  "tolerance_minutes": 15,
+  "working_days": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ]
+}
+
+###
+# group: HRIS - Shifts
+# @name Update shift
+PUT {{base_url}}/hris/shifts/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Shift Pagi",
+  "start_time": "08:00",
+  "end_time": "17:00",
+  "break_start": "12:00",
+  "break_end": "13:00",
+  "tolerance_minutes": 15,
+  "working_days": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ]
+}
+
+###
+# group: HRIS - Shifts
+# @name Delete shift
+DELETE {{base_url}}/hris/shifts/1
+Authorization: Bearer {{token}}

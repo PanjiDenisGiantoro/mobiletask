@@ -1,0 +1,672 @@
+{
+  "info": {
+    "_postman_id": "f1ov1g-4p1-c0ll3ct10n-0000-000000000000",
+    "name": "Flovig / ProjectHub Pro API",
+    "description": "Dibuat dari endpoint yang dipakai aplikasi Flutter Flovig (lib/app/data/*.dart). Base URL default: https://flovig.com/api. Set variabel collection `token` setelah login (atau jalankan request 'Login' — token otomatis disimpan lewat script).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://flovig.com/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "project_id", "value": "1", "type": "string" },
+    { "key": "task_id", "value": "1", "type": "string" },
+    { "key": "ticket_id", "value": "1", "type": "string" },
+    { "key": "user_id", "value": "1", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Refresh session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/refresh", "host": ["{{base_url}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        { "name": "List projects", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects?page=1", "host": ["{{base_url}}"], "path": ["projects"], "query": [{ "key": "page", "value": "1" }] } } },
+        { "name": "Get project detail", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}"] } } },
+        {
+          "name": "Create project",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Proyek Baru\",\n  \"description\": \"\",\n  \"client_id\": null,\n  \"manager_id\": null,\n  \"status\": \"active\",\n  \"start_date\": \"2026-11-01\",\n  \"end_date\": \"2026-12-31\",\n  \"budget\": 0,\n  \"budget_alert_threshold\": 80,\n  \"github_repo_url\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/projects", "host": ["{{base_url}}"], "path": ["projects"] }
+          }
+        },
+        {
+          "name": "Update project",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Proyek Baru\",\n  \"description\": \"\",\n  \"client_id\": null,\n  \"manager_id\": null,\n  \"status\": \"active\",\n  \"start_date\": \"2026-11-01\",\n  \"end_date\": \"2026-12-31\",\n  \"budget\": 0,\n  \"budget_alert_threshold\": 80,\n  \"github_repo_url\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}"] }
+          }
+        },
+        { "name": "List milestones", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/milestones", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "milestones"] } } },
+        {
+          "name": "Create milestone",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Milestone 1\",\n  \"description\": \"\",\n  \"status\": \"pending\",\n  \"start_date\": null,\n  \"due_date\": null,\n  \"assigned_to\": null\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/milestones", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "milestones"] }
+          }
+        },
+        {
+          "name": "Update milestone",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Milestone 1\",\n  \"description\": \"\",\n  \"status\": \"completed\",\n  \"start_date\": null,\n  \"due_date\": null,\n  \"assigned_to\": null\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/milestones/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "milestones", "1"] }
+          }
+        },
+        { "name": "List sprints", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/sprints", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "sprints"] } } },
+        {
+          "name": "Create sprint",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Sprint 1\",\n  \"start_date\": null,\n  \"end_date\": null\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/sprints", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "sprints"] }
+          }
+        },
+        { "name": "Update sprint", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Sprint 1\"\n}" }, "url": { "raw": "{{base_url}}/projects/{{project_id}}/sprints/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "sprints", "1"] } } },
+        { "name": "Delete sprint", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/sprints/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "sprints", "1"] } } },
+        { "name": "Get budget", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/budget", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "budget"] } } },
+        {
+          "name": "Add budget entry",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"expense\",\n  \"amount\": 100000,\n  \"description\": \"\",\n  \"date\": null\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/budget", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "budget"] }
+          }
+        },
+        { "name": "Delete budget entry", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/budget/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "budget", "1"] } } },
+        { "name": "Set budget alert threshold", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"budget_alert_threshold\": 80\n}" }, "url": { "raw": "{{base_url}}/projects/{{project_id}}/budget/threshold", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "budget", "threshold"] } } },
+        { "name": "List risks", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/risks", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "risks"] } } },
+        {
+          "name": "Create risk",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"\",\n  \"description\": \"\",\n  \"impact\": \"medium\",\n  \"status\": \"open\"\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/risks", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "risks"] }
+          }
+        },
+        { "name": "Update risk", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"mitigated\"\n}" }, "url": { "raw": "{{base_url}}/projects/{{project_id}}/risks/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "risks", "1"] } } },
+        { "name": "Delete risk", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/risks/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "risks", "1"] } } },
+        { "name": "List files", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/files", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "files"] } } },
+        {
+          "name": "Upload file",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "folder", "value": "", "type": "text" },
+                { "key": "description", "value": "", "type": "text" },
+                { "key": "files[]", "type": "file", "src": [] }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/files", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "files"] }
+          }
+        },
+        { "name": "Delete file", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/files/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "files", "1"] } } },
+        { "name": "Get timesheet", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/timesheet", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "timesheet"] } } },
+        {
+          "name": "Add team member",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"role\": \"member\",\n  \"max_hours_per_day\": 8\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/team", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "team"] }
+          }
+        },
+        { "name": "Remove team member", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/team/{{user_id}}", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "team", "{{user_id}}"] } } }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        { "name": "List tasks of project", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks?page=1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks"], "query": [{ "key": "page", "value": "1" }] } } },
+        {
+          "name": "Create task",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tugas baru\",\n  \"description\": \"\",\n  \"assigned_to\": null,\n  \"milestone_id\": null,\n  \"sprint_id\": null,\n  \"priority\": \"medium\",\n  \"start_date\": null,\n  \"due_date\": null,\n  \"estimated_hours\": null,\n  \"story_points\": null\n}"
+            },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks"] }
+          }
+        },
+        {
+          "name": "Update task",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tugas baru\",\n  \"description\": \"\",\n  \"assigned_to\": null,\n  \"milestone_id\": null,\n  \"sprint_id\": null,\n  \"priority\": \"medium\",\n  \"start_date\": null,\n  \"due_date\": null,\n  \"estimated_hours\": null,\n  \"story_points\": null,\n  \"status\": \"in_progress\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "Set task status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"done\"\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks", "{{task_id}}"] }
+          }
+        },
+        { "name": "Delete task", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks", "{{task_id}}"] } } },
+        { "name": "List task comments", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks/{{task_id}}/comments", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks", "{{task_id}}", "comments"] } } },
+        {
+          "name": "Add task comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Komentar\"\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/tasks/{{task_id}}/comments", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tasks", "{{task_id}}", "comments"] }
+          }
+        },
+        {
+          "name": "Add time log",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-11-09\",\n  \"hours\": 1\n}" },
+            "url": { "raw": "{{base_url}}/tasks/{{task_id}}/time-logs", "host": ["{{base_url}}"], "path": ["tasks", "{{task_id}}", "time-logs"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        { "name": "List tickets of project", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/tickets?page=1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tickets"], "query": [{ "key": "page", "value": "1" }] } } },
+        { "name": "Get ticket detail", "request": { "method": "GET", "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}"] } } },
+        {
+          "name": "Create ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Bug baru\",\n  \"description\": \"\",\n  \"type\": \"bug\",\n  \"priority\": \"medium\"\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/tickets", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "tickets"] }
+          }
+        },
+        {
+          "name": "Update ticket",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Bug baru\",\n  \"description\": \"\",\n  \"type\": \"bug\",\n  \"priority\": \"high\"\n}" },
+            "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}"] }
+          }
+        },
+        {
+          "name": "Assign ticket",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"assignee_id\": \"{{user_id}}\"\n}" },
+            "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}/assign", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}", "assign"] }
+          }
+        },
+        {
+          "name": "Set ticket status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"in_progress\",\n  \"description\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}/status", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}", "status"] }
+          }
+        },
+        {
+          "name": "Add ticket comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Komentar\"\n}" },
+            "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}/comments", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}", "comments"] }
+          }
+        },
+        {
+          "name": "Add checklist items",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"body\": \"Langkah 1\", \"sort_order\": 0 }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}/checklists", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}", "checklists"] }
+          }
+        },
+        { "name": "Toggle checklist item", "request": { "method": "PUT", "url": { "raw": "{{base_url}}/tickets/{{ticket_id}}/checklists/1/toggle", "host": ["{{base_url}}"], "path": ["tickets", "{{ticket_id}}", "checklists", "1", "toggle"] } } }
+      ]
+    },
+    {
+      "name": "Requests & Approvals",
+      "item": [
+        { "name": "List requests", "request": { "method": "GET", "url": { "raw": "{{base_url}}/requests?page=1", "host": ["{{base_url}}"], "path": ["requests"], "query": [{ "key": "page", "value": "1" }] } } },
+        {
+          "name": "Create request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"type\": \"feature\",\n  \"priority\": \"medium\"\n}" },
+            "url": { "raw": "{{base_url}}/requests", "host": ["{{base_url}}"], "path": ["requests"] }
+          }
+        },
+        { "name": "Approve request", "request": { "method": "PUT", "url": { "raw": "{{base_url}}/requests/1/approve", "host": ["{{base_url}}"], "path": ["requests", "1", "approve"] } } },
+        {
+          "name": "Reject request",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rejection_reason\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/requests/1/reject", "host": ["{{base_url}}"], "path": ["requests", "1", "reject"] }
+          }
+        },
+        { "name": "Complete request", "request": { "method": "PUT", "url": { "raw": "{{base_url}}/requests/1/complete", "host": ["{{base_url}}"], "path": ["requests", "1", "complete"] } } },
+        {
+          "name": "Decide approval",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"notes\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/approvals/1/approve", "host": ["{{base_url}}"], "path": ["approvals", "1", "approve"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "List users", "request": { "method": "GET", "url": { "raw": "{{base_url}}/users?page=1", "host": ["{{base_url}}"], "path": ["users"], "query": [{ "key": "page", "value": "1" }] } } }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        { "name": "Inbox (projects, DMs, forums)", "request": { "method": "GET", "url": { "raw": "{{base_url}}/chat/inbox", "host": ["{{base_url}}"], "path": ["chat", "inbox"] } } },
+        { "name": "Project chat thread", "request": { "method": "GET", "url": { "raw": "{{base_url}}/projects/{{project_id}}/chat/messages?after=0", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "chat", "messages"], "query": [{ "key": "after", "value": "0" }] } } },
+        {
+          "name": "Send project chat message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Halo\"\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/chat", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "chat"] }
+          }
+        },
+        { "name": "Mark project chat read", "request": { "method": "POST", "url": { "raw": "{{base_url}}/projects/{{project_id}}/chat/read", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "chat", "read"] } } },
+        { "name": "DM thread", "request": { "method": "GET", "url": { "raw": "{{base_url}}/messages/{{user_id}}/thread?after=0", "host": ["{{base_url}}"], "path": ["messages", "{{user_id}}", "thread"], "query": [{ "key": "after", "value": "0" }] } } },
+        {
+          "name": "Send DM",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Halo\"\n}" },
+            "url": { "raw": "{{base_url}}/messages/{{user_id}}", "host": ["{{base_url}}"], "path": ["messages", "{{user_id}}"] }
+          }
+        },
+        { "name": "Forum messages", "request": { "method": "GET", "url": { "raw": "{{base_url}}/forums/1/messages?after=0", "host": ["{{base_url}}"], "path": ["forums", "1", "messages"], "query": [{ "key": "after", "value": "0" }] } } },
+        {
+          "name": "Send forum message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Halo semua\"\n}" },
+            "url": { "raw": "{{base_url}}/forums/1/messages", "host": ["{{base_url}}"], "path": ["forums", "1", "messages"] }
+          }
+        },
+        {
+          "name": "Create forum",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Forum Baru\",\n  \"description\": \"\",\n  \"member_ids\": [\"{{user_id}}\"]\n}" },
+            "url": { "raw": "{{base_url}}/forums", "host": ["{{base_url}}"], "path": ["forums"] }
+          }
+        },
+        { "name": "Edit message (proj/dm)", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"body\": \"Diedit\"\n}" }, "url": { "raw": "{{base_url}}/projects/{{project_id}}/chat/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "chat", "1"] } } },
+        { "name": "Delete message (proj/dm)", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/projects/{{project_id}}/chat/1", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "chat", "1"] } } },
+        {
+          "name": "React to message (project chat only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"emoji\": \"\\ud83d\\udc4d\"\n}" },
+            "url": { "raw": "{{base_url}}/projects/{{project_id}}/chat/1/react", "host": ["{{base_url}}"], "path": ["projects", "{{project_id}}", "chat", "1", "react"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calendar",
+      "item": [
+        { "name": "List calendar events", "request": { "method": "GET", "url": { "raw": "{{base_url}}/calendar/events?start=2026-11-01&end=2026-11-30", "host": ["{{base_url}}"], "path": ["calendar", "events"], "query": [{ "key": "start", "value": "2026-11-01" }, { "key": "end", "value": "2026-11-30" }] } } }
+      ]
+    },
+    {
+      "name": "HRIS - Me & Attendance",
+      "item": [
+        { "name": "Get my HRIS profile/permissions", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/me", "host": ["{{base_url}}"], "path": ["hris", "me"] } } },
+        { "name": "Today's attendance", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/attendance/today", "host": ["{{base_url}}"], "path": ["hris", "attendance", "today"] } } },
+        {
+          "name": "Check-in",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"lat\": -6.200000,\n  \"lng\": 106.816666\n}" },
+            "url": { "raw": "{{base_url}}/hris/attendance/check-in", "host": ["{{base_url}}"], "path": ["hris", "attendance", "check-in"] }
+          }
+        },
+        {
+          "name": "Check-out",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"lat\": -6.200000,\n  \"lng\": 106.816666\n}" },
+            "url": { "raw": "{{base_url}}/hris/attendance/check-out", "host": ["{{base_url}}"], "path": ["hris", "attendance", "check-out"] }
+          }
+        },
+        { "name": "Attendance history (month)", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/attendance/history?year=2026&month=11", "host": ["{{base_url}}"], "path": ["hris", "attendance", "history"], "query": [{ "key": "year", "value": "2026" }, { "key": "month", "value": "11" }] } } },
+        { "name": "Team attendance (date)", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/attendance/team?date=2026-11-09", "host": ["{{base_url}}"], "path": ["hris", "attendance", "team"], "query": [{ "key": "date", "value": "2026-11-09" }] } } },
+        { "name": "List holidays (year)", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/attendance/holidays?year=2026", "host": ["{{base_url}}"], "path": ["hris", "attendance", "holidays"], "query": [{ "key": "year", "value": "2026" }] } } },
+        {
+          "name": "Create holiday",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-12-25\",\n  \"name\": \"Hari Natal\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/attendance/holidays", "host": ["{{base_url}}"], "path": ["hris", "attendance", "holidays"] }
+          }
+        },
+        { "name": "Delete holiday", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/attendance/holidays/1", "host": ["{{base_url}}"], "path": ["hris", "attendance", "holidays", "1"] } } },
+        { "name": "List shift schedules (range)", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/attendance/schedules?from=2026-11-01&to=2026-11-30", "host": ["{{base_url}}"], "path": ["hris", "attendance", "schedules"], "query": [{ "key": "from", "value": "2026-11-01" }, { "key": "to", "value": "2026-11-30" }] } } },
+        {
+          "name": "Assign shift schedule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"shift_id\": 1,\n  \"date\": \"2026-11-10\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/attendance/schedules", "host": ["{{base_url}}"], "path": ["hris", "attendance", "schedules"] }
+          }
+        },
+        { "name": "Get attendance setting", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/attendance/setting", "host": ["{{base_url}}"], "path": ["hris", "attendance", "setting"] } } },
+        {
+          "name": "Update attendance setting",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"requires_location\": true,\n  \"requires_face\": false\n}" },
+            "url": { "raw": "{{base_url}}/hris/attendance/setting", "host": ["{{base_url}}"], "path": ["hris", "attendance", "setting"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "HRIS - Leave",
+      "item": [
+        { "name": "List leave types", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/leave-types", "host": ["{{base_url}}"], "path": ["hris", "leave-types"] } } },
+        { "name": "List leave requests", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/leaves", "host": ["{{base_url}}"], "path": ["hris", "leaves"] } } },
+        {
+          "name": "Submit leave",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"leave_type_id\": 1,\n  \"start_date\": \"2026-11-10\",\n  \"end_date\": \"2026-11-11\",\n  \"reason\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/leaves", "host": ["{{base_url}}"], "path": ["hris", "leaves"] }
+          }
+        },
+        { "name": "Approve leave", "request": { "method": "PATCH", "url": { "raw": "{{base_url}}/hris/leaves/1/approve", "host": ["{{base_url}}"], "path": ["hris", "leaves", "1", "approve"] } } },
+        {
+          "name": "Reject leave",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rejection_reason\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/leaves/1/reject", "host": ["{{base_url}}"], "path": ["hris", "leaves", "1", "reject"] }
+          }
+        },
+        { "name": "Cancel/delete leave", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/leaves/1", "host": ["{{base_url}}"], "path": ["hris", "leaves", "1"] } } }
+      ]
+    },
+    {
+      "name": "HRIS - Overtime",
+      "item": [
+        { "name": "List overtimes", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/overtimes", "host": ["{{base_url}}"], "path": ["hris", "overtimes"] } } },
+        {
+          "name": "Preview overtime hours/pay",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-11-09\",\n  \"start_time\": \"18:00\",\n  \"end_time\": \"20:00\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/overtimes/preview", "host": ["{{base_url}}"], "path": ["hris", "overtimes", "preview"] }
+          }
+        },
+        {
+          "name": "Submit overtime",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-11-09\",\n  \"start_time\": \"18:00\",\n  \"end_time\": \"20:00\",\n  \"reason\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/overtimes", "host": ["{{base_url}}"], "path": ["hris", "overtimes"] }
+          }
+        },
+        { "name": "Approve overtime", "request": { "method": "PATCH", "url": { "raw": "{{base_url}}/hris/overtimes/1/approve", "host": ["{{base_url}}"], "path": ["hris", "overtimes", "1", "approve"] } } },
+        {
+          "name": "Reject overtime",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rejection_reason\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/overtimes/1/reject", "host": ["{{base_url}}"], "path": ["hris", "overtimes", "1", "reject"] }
+          }
+        },
+        { "name": "Cancel/delete overtime", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/overtimes/1", "host": ["{{base_url}}"], "path": ["hris", "overtimes", "1"] } } }
+      ]
+    },
+    {
+      "name": "HRIS - Reimbursement",
+      "item": [
+        { "name": "List reimbursements", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/reimbursements", "host": ["{{base_url}}"], "path": ["hris", "reimbursements"] } } },
+        {
+          "name": "Submit reimbursement",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"\",\n  \"category\": \"transport\",\n  \"amount\": 50000,\n  \"expense_date\": \"2026-11-09\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/reimbursements", "host": ["{{base_url}}"], "path": ["hris", "reimbursements"] }
+          }
+        },
+        { "name": "Approve reimbursement", "request": { "method": "PATCH", "url": { "raw": "{{base_url}}/hris/reimbursements/1/approve", "host": ["{{base_url}}"], "path": ["hris", "reimbursements", "1", "approve"] } } },
+        {
+          "name": "Reject reimbursement",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rejection_reason\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/reimbursements/1/reject", "host": ["{{base_url}}"], "path": ["hris", "reimbursements", "1", "reject"] }
+          }
+        },
+        { "name": "Delete reimbursement", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/reimbursements/1", "host": ["{{base_url}}"], "path": ["hris", "reimbursements", "1"] } } }
+      ]
+    },
+    {
+      "name": "HRIS - Kasbon",
+      "item": [
+        { "name": "List kasbons", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/kasbons", "host": ["{{base_url}}"], "path": ["hris", "kasbons"] } } },
+        {
+          "name": "Create kasbon",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"jumlah\": 1000000,\n  \"cicilan_per_bulan\": 100000,\n  \"tanggal\": \"2026-11-09\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/kasbons", "host": ["{{base_url}}"], "path": ["hris", "kasbons"] }
+          }
+        },
+        { "name": "Delete kasbon", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/kasbons/1", "host": ["{{base_url}}"], "path": ["hris", "kasbons", "1"] } } }
+      ]
+    },
+    {
+      "name": "HRIS - Payroll & Bonus",
+      "item": [
+        { "name": "List payrolls", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/payrolls", "host": ["{{base_url}}"], "path": ["hris", "payrolls"] } } },
+        {
+          "name": "Generate payroll",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"year\": 2026,\n  \"month\": 11\n}" },
+            "url": { "raw": "{{base_url}}/hris/payrolls/generate", "host": ["{{base_url}}"], "path": ["hris", "payrolls", "generate"] }
+          }
+        },
+        { "name": "Finalize payroll", "request": { "method": "PATCH", "url": { "raw": "{{base_url}}/hris/payrolls/1/finalize", "host": ["{{base_url}}"], "path": ["hris", "payrolls", "1", "finalize"] } } },
+        { "name": "List bonuses", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/bonuses", "host": ["{{base_url}}"], "path": ["hris", "bonuses"] } } },
+        {
+          "name": "Create bonus",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"year\": 2026,\n  \"month\": 11,\n  \"type\": \"bonus\",\n  \"amount\": 500000,\n  \"description\": \"\"\n}" },
+            "url": { "raw": "{{base_url}}/hris/bonuses", "host": ["{{base_url}}"], "path": ["hris", "bonuses"] }
+          }
+        },
+        { "name": "Delete bonus", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/bonuses/1", "host": ["{{base_url}}"], "path": ["hris", "bonuses", "1"] } } }
+      ]
+    },
+    {
+      "name": "HRIS - Employees & Salary",
+      "item": [
+        { "name": "List employees", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/employees", "host": ["{{base_url}}"], "path": ["hris", "employees"] } } },
+        { "name": "Get employee salary", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/employees/{{user_id}}/salaries", "host": ["{{base_url}}"], "path": ["hris", "employees", "{{user_id}}", "salaries"] } } },
+        {
+          "name": "Create employee salary",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gajiPokok\": 5000000,\n  \"tunjanganTransport\": 0,\n  \"tunjanganMakan\": 0,\n  \"tunjanganJabatan\": 0,\n  \"npwp\": \"\",\n  \"statusPajak\": \"TK/0\",\n  \"bpjsKesehatan\": true,\n  \"bpjsKetenagakerjaan\": true,\n  \"effectiveDate\": \"2026-11-09\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/hris/employees/{{user_id}}/salaries", "host": ["{{base_url}}"], "path": ["hris", "employees", "{{user_id}}", "salaries"] }
+          }
+        },
+        {
+          "name": "Update employee salary",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gajiPokok\": 5500000,\n  \"tunjanganTransport\": 0,\n  \"tunjanganMakan\": 0,\n  \"tunjanganJabatan\": 0,\n  \"npwp\": \"\",\n  \"statusPajak\": \"TK/0\",\n  \"bpjsKesehatan\": true,\n  \"bpjsKetenagakerjaan\": true,\n  \"effectiveDate\": \"2026-11-09\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/hris/employees/{{user_id}}/salaries/1", "host": ["{{base_url}}"], "path": ["hris", "employees", "{{user_id}}", "salaries", "1"] }
+          }
+        },
+        {
+          "name": "Set employee shift",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"shift_id\": 1\n}" },
+            "url": { "raw": "{{base_url}}/hris/employees/{{user_id}}/shift", "host": ["{{base_url}}"], "path": ["hris", "employees", "{{user_id}}", "shift"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "HRIS - Shifts",
+      "item": [
+        { "name": "List shifts", "request": { "method": "GET", "url": { "raw": "{{base_url}}/hris/shifts", "host": ["{{base_url}}"], "path": ["hris", "shifts"] } } },
+        {
+          "name": "Create shift",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Shift Pagi\",\n  \"start_time\": \"08:00\",\n  \"end_time\": \"17:00\",\n  \"break_start\": \"12:00\",\n  \"break_end\": \"13:00\",\n  \"tolerance_minutes\": 15,\n  \"working_days\": [1, 2, 3, 4, 5]\n}"
+            },
+            "url": { "raw": "{{base_url}}/hris/shifts", "host": ["{{base_url}}"], "path": ["hris", "shifts"] }
+          }
+        },
+        {
+          "name": "Update shift",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Shift Pagi\",\n  \"start_time\": \"08:00\",\n  \"end_time\": \"17:00\",\n  \"break_start\": \"12:00\",\n  \"break_end\": \"13:00\",\n  \"tolerance_minutes\": 15,\n  \"working_days\": [1, 2, 3, 4, 5]\n}"
+            },
+            "url": { "raw": "{{base_url}}/hris/shifts/1", "host": ["{{base_url}}"], "path": ["hris", "shifts", "1"] }
+          }
+        },
+        { "name": "Delete shift", "request": { "method": "DELETE", "url": { "raw": "{{base_url}}/hris/shifts/1", "host": ["{{base_url}}"], "path": ["hris", "shifts", "1"] } } }
+      ]
+    }
+  ]
+}
