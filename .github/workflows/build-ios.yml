@@ -23,15 +23,15 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Ensure iOS 13.0+ Podfile & install CocoaPods
+      - name: Ensure iOS 15.0 Podfile & install CocoaPods
         run: |
           flutter precache --ios
           if [ ! -f ios/Podfile ]; then
             flutter build ios --config-only --no-codesign || true
           fi
           if [ -f ios/Podfile ]; then
-            sed -i '' "s/# platform :ios, '.*'/platform :ios, '13.0'/" ios/Podfile || true
-            sed -i '' "s/platform :ios, '12.0'/platform :ios, '13.0'/" ios/Podfile || true
+            sed -i '' -E "s/^#?[[:space:]]*platform :ios,.*/platform :ios, '15.0'/" ios/Podfile
+            grep -q "^platform :ios," ios/Podfile || printf "platform :ios, '15.0'\n%s" "$(cat ios/Podfile)" > ios/Podfile
           fi
           cd ios
           pod install --repo-update
