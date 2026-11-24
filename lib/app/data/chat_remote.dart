@@ -70,10 +70,11 @@ class ChatRepository extends ChangeNotifier {
       directs = [for (final r in (j['dms'] as List? ?? const [])) room('dm', r as Map<String, dynamic>)]
         ..sort((a, b) => (b.lastAt.isEmpty ? 0 : 1).compareTo(a.lastAt.isEmpty ? 0 : 1));
       forums = [for (final r in (j['forums'] as List? ?? const [])) room('forum', r as Map<String, dynamic>)];
+      final activeCid = PhStore.activeCompanyId;
       peers = [
         for (final p in (j['allPeers'] as List? ?? const []).whereType<Map<dynamic, dynamic>>())
           _store.users[_store.upsertPhUser(p)]!,
-      ];
+      ].where((u) => activeCid.isEmpty || u.companyId.isEmpty || u.companyId == activeCid).toList();
     } on ApiException catch (e) {
       error = e.message;
     } finally {

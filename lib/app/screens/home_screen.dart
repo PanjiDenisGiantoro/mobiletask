@@ -8,6 +8,7 @@ import '../theme/app_settings.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_mode.dart';
 import 'add_task_form_sheet.dart';
+import 'ai_assistant_sheet.dart';
 import 'members_clients_screen.dart';
 import 'projects_screen.dart';
 import 'tasks_screen.dart';
@@ -35,6 +36,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNav = 0;
   AppMode _mode = AppMode.taskManagement;
+  bool _quickRadialOpen = false;
 
   List<Widget> get _screens {
     if (_mode == AppMode.hris) {
@@ -58,14 +60,19 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _mode = mode);
   }
 
-  /// Tombol "+" di tengah bottom nav: mode Task Management langsung buka
-  /// form "Tugas Baru", mode HRIS buka menu Absen/Cuti.
+  /// Tombol "+" di tengah bottom nav: mode Task Management membuka semicircle
+  /// radial menu (Jadwal, Tugas Baru, Tiket Baru), mode HRIS buka menu Absen/Cuti.
   void _onAddTap() {
     if (_mode == AppMode.hris) {
       _openHrisQuickMenu();
     } else {
-      showAddTaskFormSheet(context);
+      setState(() => _quickRadialOpen = !_quickRadialOpen);
     }
+  }
+
+  void _closeRadialAndRun(VoidCallback action) {
+    setState(() => _quickRadialOpen = false);
+    action();
   }
 
   void _openHrisQuickMenu() {
@@ -125,15 +132,237 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Scaffold(
       extendBody: true,
       backgroundColor: c.bg,
-      body: IndexedStack(index: _selectedNav, children: _screens),
+      body: Stack(
+        children: [
+          IndexedStack(index: _selectedNav, children: _screens),
+          if (_quickRadialOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _quickRadialOpen = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  color: Colors.black.withValues(alpha: 0.16),
+                ),
+              ),
+            ),
+          if (_selectedNav == 0 && !_quickRadialOpen)
+            Positioned(
+              right: 16,
+              bottom: bottomInset + 96,
+              child: Tooltip(
+                message: 'Runa AI Assistant',
+                child: GestureDetector(
+                  onTap: () => showAiAssistantSheet(context),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF7C3AED),
+                              AppColors.primary600,
+                              AppColors.accent400,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary600.withValues(alpha: 0.42),
+                              blurRadius: 14,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF0F172A),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            'assets/images/runa_ai_avatar.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 1,
+                        bottom: 1,
+                        child: Container(
+                          width: 13,
+                          height: 13,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF34D399),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: bottomInset + 54,
+            child: IgnorePointer(
+              ignoring: !_quickRadialOpen,
+              child: Center(
+                child: _QuickAddRadialMenu(
+                  open: _quickRadialOpen,
+                  onCalendar: () => _closeRadialAndRun(() => context.push('/calendar')),
+                  onTask: () => _closeRadialAndRun(() => showAddTaskFormSheet(context)),
+                  onTicket: () => _closeRadialAndRun(() => context.push('/tickets')),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: _FloatingNavBar(
         mode: _mode,
         selectedIndex: _selectedNav,
-        onTap: (i) => setState(() => _selectedNav = i),
+        isRadialOpen: _quickRadialOpen,
+        onTap: (i) => setState(() {
+          _quickRadialOpen = false;
+          _selectedNav = i;
+        }),
         onAddTap: _onAddTap,
+      ),
+    );
+  }
+}
+
+/// Semicircle radial menu biru yang mekar halus di atas tombol "+" saat diketuk:
+/// Kiri = Jadwal/Kalender, Tengah Atas = Tugas Baru, Kanan = Tiket Baru.
+class _QuickAddRadialMenu extends StatelessWidget {
+  final bool open;
+  final VoidCallback onCalendar;
+  final VoidCallback onTask;
+  final VoidCallback onTicket;
+
+  const _QuickAddRadialMenu({
+    required this.open,
+    required this.onCalendar,
+    required this.onTask,
+    required this.onTicket,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: open ? 1.0 : 0.25,
+      alignment: Alignment.bottomCenter,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: open ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
+          width: 214,
+          height: 110,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(110)),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.accent400,
+                AppColors.primary600,
+                AppColors.heroStart,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary600.withValues(alpha: 0.36),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Kiri: Jadwal / Kalender
+              Positioned(
+                left: 18,
+                bottom: 22,
+                child: _radialAction(
+                  icon: Icons.calendar_month_outlined,
+                  label: S.tr('Jadwal', 'Schedule'),
+                  onTap: onCalendar,
+                ),
+              ),
+              // Tengah Atas: Tugas Baru
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 10,
+                child: Center(
+                  child: _radialAction(
+                    icon: Icons.task_alt_rounded,
+                    label: S.tr('Tugas', 'Task'),
+                    onTap: onTask,
+                  ),
+                ),
+              ),
+              // Kanan: Tiket Baru
+              Positioned(
+                right: 18,
+                bottom: 22,
+                child: _radialAction(
+                  icon: Icons.confirmation_number_outlined,
+                  label: S.tr('Tiket', 'Ticket'),
+                  onTap: onTicket,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _radialAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 22),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -144,12 +373,14 @@ class _HomeScreenState extends State<HomeScreen> {
 class _FloatingNavBar extends StatefulWidget {
   final AppMode mode;
   final int selectedIndex;
+  final bool isRadialOpen;
   final ValueChanged<int> onTap;
   final VoidCallback onAddTap;
 
   const _FloatingNavBar({
     required this.mode,
     required this.selectedIndex,
+    this.isRadialOpen = false,
     required this.onTap,
     required this.onAddTap,
   });
@@ -197,7 +428,7 @@ class _FloatingNavBarState extends State<_FloatingNavBar>
     _currentSlot = _slotForNav(widget.selectedIndex).toDouble();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: const Duration(milliseconds: 340),
     );
     _posAnim = AlwaysStoppedAnimation<double>(_currentSlot);
     _orbLiftAnim = const AlwaysStoppedAnimation<double>(0);
@@ -213,41 +444,20 @@ class _FloatingNavBarState extends State<_FloatingNavBar>
       _currentSlot = to;
 
       _posAnim = Tween<double>(begin: from, end: to).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
       );
 
-      // Efek memantul (bounce) pada bola ikon aktif saat berpindah tab.
-      _orbLiftAnim = TweenSequence<double>([
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 0, end: 10).chain(CurveTween(curve: Curves.easeIn)),
-          weight: 22,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 10, end: -9).chain(CurveTween(curve: Curves.easeOut)),
-          weight: 38,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: -9, end: 3).chain(CurveTween(curve: Curves.easeInOut)),
-          weight: 22,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 3, end: 0).chain(CurveTween(curve: Curves.easeOut)),
-          weight: 18,
-        ),
-      ]).animate(_controller);
+      // Transisi halus tanpa lompatan vertikal berlebih.
+      _orbLiftAnim = const AlwaysStoppedAnimation<double>(0);
 
       _orbScaleAnim = TweenSequence<double>([
         TweenSequenceItem(
-          tween: Tween<double>(begin: 1.0, end: 0.86),
-          weight: 22,
+          tween: Tween<double>(begin: 1.0, end: 0.93).chain(CurveTween(curve: Curves.easeOut)),
+          weight: 45,
         ),
         TweenSequenceItem(
-          tween: Tween<double>(begin: 0.86, end: 1.12).chain(CurveTween(curve: Curves.easeOut)),
-          weight: 42,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 1.12, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
-          weight: 36,
+          tween: Tween<double>(begin: 0.93, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 55,
         ),
       ]).animate(_controller);
 
@@ -266,196 +476,253 @@ class _FloatingNavBarState extends State<_FloatingNavBar>
     final c = context.colors;
     final s = S.of(context);
     final labels = _labels(s);
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-    const barTopOffset = 16.0;
+    const barTopOffset = 18.0;
     const barBodyHeight = 64.0;
-    final totalHeight = barTopOffset + barBodyHeight + bottomInset;
+    const innerPad = 12.0;
+    const orbSize = 46.0;
+    const notchRadius = 27.0; // orbRadius (23) + gap presisi (4)
+    const filletRadius = 7.0;
+    const totalHalfSpan = notchRadius + filletRadius; // 34.0
+    const centerBtnSize = 44.0;
     final activeSlot = _slotForNav(widget.selectedIndex);
     final activeIcon = _icons[activeSlot] ?? AppIconType.home;
+    // Putih ke abu-abuan lembut di light mode, adaptif di dark mode
+    final barBg = c.isDark ? AppColors.darkSurfaceElevated : const Color(0xFFF1F5F9);
+    final inactiveIconColor = c.isDark ? AppColors.darkTextMuted : AppColors.grey700;
 
-    return SizedBox(
-      height: totalHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final slotWidth = width / 5;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: SizedBox(
+          height: barTopOffset + barBodyHeight,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final usableWidth = width - (innerPad * 2);
+              final slotWidth = usableWidth / 5;
 
-          return AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              final pos = _posAnim.value;
-              const notchHalfW = 42.0;
-              final rawCenterX = (pos + 0.5) * slotWidth;
-              final notchCenterX = rawCenterX.clamp(notchHalfW * 0.85, width - notchHalfW * 0.85);
-              const orbSize = 50.0;
+              return AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  final pos = _posAnim.value;
+                  final rawCenterX = innerPad + (pos + 0.5) * slotWidth;
+                  final notchCenterX = rawCenterX.clamp(
+                    totalHalfSpan + 4,
+                    width - totalHalfSpan - 4,
+                  );
 
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Bar bawah full-width dengan lekukan U-notch dalam seperti referensi
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: barTopOffset,
-                    bottom: 0,
-                    child: CustomPaint(
-                      painter: _CurvedNavBarPainter(
-                        notchCenterX: notchCenterX,
-                        notchHalfW: notchHalfW,
-                        backgroundColor: c.surface,
-                        borderColor: c.isDark ? c.border : Colors.transparent,
-                        shadowColor: Colors.black.withValues(alpha: c.isDark ? 0.45 : 0.14),
-                      ),
-                    ),
-                  ),
-
-                  // Bola lingkaran aktif duduk rapi di dalam lekukan U-notch + animasi bounce
-                  Positioned(
-                    left: notchCenterX - orbSize / 2,
-                    top: (barTopOffset - 12) + _orbLiftAnim.value,
-                    child: Transform.scale(
-                      scale: _orbScaleAnim.value,
-                      child: Container(
-                        width: orbSize,
-                        height: orbSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const RadialGradient(
-                            center: Alignment(-0.3, -0.35),
-                            radius: 0.95,
-                            colors: [
-                              AppColors.accent400,
-                              AppColors.heroMid,
-                              AppColors.heroStart,
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary700.withValues(alpha: 0.45),
-                              blurRadius: 16,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: AppIcon(
-                            activeIcon,
-                            color: Colors.white,
-                            size: 24,
-                            strokeWidth: 2.1,
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Floating rounded bar putih ke abu-abuan dengan lekukan lingkaran presisi
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        top: barTopOffset,
+                        height: barBodyHeight,
+                        child: CustomPaint(
+                          painter: _CurvedNavBarPainter(
+                            notchCenterX: notchCenterX,
+                            notchRadius: notchRadius,
+                            filletRadius: filletRadius,
+                            backgroundColor: barBg,
+                            borderColor: c.isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
+                            shadowColor: Colors.black.withValues(alpha: c.isDark ? 0.35 : 0.10),
                           ),
                         ),
                       ),
-                    ),
-                  ),
 
-                  // 5 slot ikon bersih tanpa teks (sama seperti referensi)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: barTopOffset,
-                    height: barBodyHeight,
-                    child: Row(
-                      children: List.generate(5, (i) {
-                        if (i == 2) {
-                          return Expanded(
-                            child: Semantics(
-                              button: true,
-                              label: widget.mode == AppMode.hris
-                                  ? S.tr('Buat pengajuan', 'Create request')
-                                  : S.tr('Tambah tugas', 'Add task'),
-                              child: Tooltip(
-                                message: widget.mode == AppMode.hris
-                                    ? S.tr('Buat pengajuan', 'Create request')
-                                    : S.tr('Tambah tugas', 'Add task'),
-                                child: InkResponse(
-                                  onTap: widget.onAddTap,
-                                  radius: 28,
-                                  child: Center(
-                                    child: Container(
-                                      width: 38,
-                                      height: 38,
-                                      decoration: BoxDecoration(
-                                        color: c.primarySoft,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: c.primary.withValues(alpha: 0.28),
-                                        ),
-                                      ),
-                                      child: AppIcon(
-                                        AppIconType.plus,
-                                        color: c.primary,
-                                        size: 20,
-                                        strokeWidth: 2.2,
-                                      ),
-                                    ),
-                                  ),
+                      // Bola lingkaran aktif konsentris tepat di pusat lekukan (y = barTopOffset + filletRadius)
+                      Positioned(
+                        left: notchCenterX - orbSize / 2,
+                        top: (barTopOffset + filletRadius - orbSize / 2) + _orbLiftAnim.value,
+                        child: Transform.scale(
+                          scale: _orbScaleAnim.value,
+                          child: Container(
+                            width: orbSize,
+                            height: orbSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.accent400,
+                                  AppColors.primary600,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary600.withValues(alpha: 0.38),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
                                 ),
+                              ],
+                            ),
+                            child: Center(
+                              child: AppIcon(
+                                activeIcon,
+                                color: Colors.white,
+                                size: 22,
+                                strokeWidth: 2.1,
                               ),
                             ),
-                          );
-                        }
+                          ),
+                        ),
+                      ),
 
-                        final navIndex = i > 2 ? i - 1 : i;
-                        final selected = widget.selectedIndex == navIndex;
-                        final iconColor = c.isDark ? AppColors.darkTextPrimary : AppColors.grey900;
-
-                        return Expanded(
-                          child: Semantics(
-                            button: true,
-                            selected: selected,
-                            label: labels[i],
-                            child: Tooltip(
-                              message: labels[i],
-                              child: InkResponse(
-                                onTap: () => widget.onTap(navIndex),
-                                radius: 30,
+                      // Tombol "+" di tengah sedikit lebih besar & duduk di dalam lekukan ke atas
+                      Positioned(
+                        left: width / 2 - centerBtnSize / 2,
+                        top: barTopOffset - 2,
+                        child: Semantics(
+                          button: true,
+                          label: widget.mode == AppMode.hris
+                              ? S.tr('Buat pengajuan', 'Create request')
+                              : S.tr('Tambah tugas', 'Add task'),
+                          child: Tooltip(
+                            message: widget.mode == AppMode.hris
+                                ? S.tr('Buat pengajuan', 'Create request')
+                                : S.tr('Tambah tugas', 'Add task'),
+                            child: GestureDetector(
+                              onTap: widget.onAddTap,
+                              child: Container(
+                                width: centerBtnSize,
+                                height: centerBtnSize,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppColors.heroStart,
+                                      AppColors.primary600,
+                                    ],
+                                  ),
+                                  border: Border.all(
+                                    color: barBg,
+                                    width: 2.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary600.withValues(alpha: 0.34),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
                                 child: Center(
-                                  child: AnimatedOpacity(
-                                    duration: const Duration(milliseconds: 180),
-                                    opacity: selected ? 0.0 : 1.0,
-                                    child: AnimatedScale(
-                                      duration: const Duration(milliseconds: 220),
-                                      scale: selected ? 0.5 : 1.0,
-                                      child: AppIcon(
-                                        _icons[i]!,
-                                        color: iconColor,
-                                        size: 24,
-                                        strokeWidth: 1.9,
-                                      ),
+                                  child: AnimatedRotation(
+                                    turns: widget.isRadialOpen ? 0.125 : 0.0,
+                                    duration: const Duration(milliseconds: 240),
+                                    curve: Curves.easeInOutCubic,
+                                    child: const AppIcon(
+                                      AppIconType.plus,
+                                      color: Colors.white,
+                                      size: 21,
+                                      strokeWidth: 2.4,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
+                        ),
+                      ),
+
+                      // 5 slot ikon bersih di dalam floating bar
+                      Positioned(
+                        left: innerPad,
+                        right: innerPad,
+                        top: barTopOffset,
+                        height: barBodyHeight,
+                        child: Row(
+                          children: List.generate(5, (i) {
+                            if (i == 2) {
+                              return const Expanded(child: SizedBox.shrink());
+                            }
+
+                            final navIndex = i > 2 ? i - 1 : i;
+                            final selected = widget.selectedIndex == navIndex;
+                            final labelColor = selected ? c.primary : inactiveIconColor;
+
+                            return Expanded(
+                              child: Semantics(
+                                button: true,
+                                selected: selected,
+                                label: labels[i],
+                                child: Tooltip(
+                                  message: labels[i],
+                                  child: InkResponse(
+                                    onTap: () => widget.onTap(navIndex),
+                                    radius: 28,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        AnimatedOpacity(
+                                          duration: const Duration(milliseconds: 180),
+                                          opacity: selected ? 0.0 : 1.0,
+                                          child: AnimatedScale(
+                                            duration: const Duration(milliseconds: 220),
+                                            scale: selected ? 0.5 : 1.0,
+                                            child: AppIcon(
+                                              _icons[i]!,
+                                              color: inactiveIconColor,
+                                              size: 21,
+                                              strokeWidth: 1.85,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 7),
+                                          child: Text(
+                                            labels[i],
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              color: labelColor,
+                                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Menggambar bar bawah full-width dengan lekukan U-notch melengkung dalam
-/// dan bahu S-curve halus persis seperti referensi.
+/// Menggambar floating rounded bar dengan lekukan busur lingkaran presisi
+/// (semicircle konsentris dengan bola aktif + fillet tangensial halus di tepi atas).
 class _CurvedNavBarPainter extends CustomPainter {
   final double notchCenterX;
-  final double notchHalfW;
+  final double notchRadius;
+  final double filletRadius;
   final Color backgroundColor;
   final Color borderColor;
   final Color shadowColor;
 
   const _CurvedNavBarPainter({
     required this.notchCenterX,
-    required this.notchHalfW,
+    required this.notchRadius,
+    required this.filletRadius,
     required this.backgroundColor,
     required this.borderColor,
     required this.shadowColor,
@@ -465,37 +732,96 @@ class _CurvedNavBarPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    const notchDepth = 45.0;
-    final cx = notchCenterX.clamp(notchHalfW * 0.85, w - notchHalfW * 0.85);
-    final leftStart = (cx - notchHalfW).clamp(0.0, w);
-    final rightEnd = (cx + notchHalfW).clamp(0.0, w);
+    const cornerR = 20.0;
+    final R = notchRadius;
+    final f = filletRadius;
+    final span = R + f;
+    final cx = notchCenterX.clamp(span + 4, w - span - 4);
+    final leftTangentX = cx - span;
+    final rightTangentX = cx + span;
+    final topLeftR = leftTangentX < cornerR ? leftTangentX : cornerR;
+    final topRightR = (w - rightTangentX) < cornerR ? (w - rightTangentX) : cornerR;
+
+    // Lekukan ke atas halus di tengah (untuk tombol "+") yang otomatis mereda
+    // sesaat jika lekukan tab aktif sedang melintas melewati tengah.
+    final midX = w / 2;
+    const bumpHalfW = 28.0;
+    final distFromMid = (cx - midX).abs();
+    final bumpFactor = ((distFromMid - (span + 10)) / 16.0).clamp(0.0, 1.0);
+    final bumpH = 11.0 * bumpFactor;
+    final bumpLeft = midX - bumpHalfW;
+    final bumpRight = midX + bumpHalfW;
+
+    void addDownwardNotch(Path p) {
+      p
+        ..arcToPoint(
+          Offset(cx - R, f),
+          radius: Radius.circular(f),
+          clockwise: true,
+        )
+        ..arcToPoint(
+          Offset(cx + R, f),
+          radius: Radius.circular(R),
+          clockwise: false,
+        )
+        ..arcToPoint(
+          Offset(rightTangentX, 0),
+          radius: Radius.circular(f),
+          clockwise: true,
+        );
+    }
+
+    void addUpwardCenterBump(Path p) {
+      if (bumpH <= 0.2) return;
+      p
+        ..cubicTo(
+          bumpLeft + bumpHalfW * 0.45,
+          0,
+          midX - bumpHalfW * 0.45,
+          -bumpH,
+          midX,
+          -bumpH,
+        )
+        ..cubicTo(
+          midX + bumpHalfW * 0.45,
+          -bumpH,
+          bumpRight - bumpHalfW * 0.45,
+          0,
+          bumpRight,
+          0,
+        );
+    }
 
     final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(leftStart, 0)
-      ..cubicTo(
-        cx - notchHalfW * 0.62,
-        0,
-        cx - notchHalfW * 0.56,
-        notchDepth,
-        cx,
-        notchDepth,
-      )
-      ..cubicTo(
-        cx + notchHalfW * 0.56,
-        notchDepth,
-        cx + notchHalfW * 0.62,
-        0,
-        rightEnd,
-        0,
-      )
-      ..lineTo(w, 0)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
+      ..moveTo(0, topLeftR)
+      ..quadraticBezierTo(0, 0, topLeftR, 0);
+
+    if (cx < midX) {
+      path.lineTo(leftTangentX, 0);
+      addDownwardNotch(path);
+      if (bumpH > 0.2 && bumpLeft >= rightTangentX) {
+        path.lineTo(bumpLeft, 0);
+        addUpwardCenterBump(path);
+      }
+    } else {
+      if (bumpH > 0.2 && bumpRight <= leftTangentX) {
+        path.lineTo(bumpLeft, 0);
+        addUpwardCenterBump(path);
+      }
+      path.lineTo(leftTangentX, 0);
+      addDownwardNotch(path);
+    }
+
+    path
+      ..lineTo(w - topRightR, 0)
+      ..quadraticBezierTo(w, 0, w, topRightR)
+      ..lineTo(w, h - cornerR)
+      ..quadraticBezierTo(w, h, w - cornerR, h)
+      ..lineTo(cornerR, h)
+      ..quadraticBezierTo(0, h, 0, h - cornerR)
       ..close();
 
-    // Bayangan lembut di sepanjang tepi atas & lekukan
-    canvas.drawShadow(path, shadowColor, 16, true);
+    canvas.drawShadow(path, shadowColor, 12, true);
 
     final fillPaint = Paint()
       ..color = backgroundColor
@@ -506,7 +832,7 @@ class _CurvedNavBarPainter extends CustomPainter {
       final strokePaint = Paint()
         ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.8;
+        ..strokeWidth = 1.0;
       canvas.drawPath(path, strokePaint);
     }
   }
@@ -514,6 +840,8 @@ class _CurvedNavBarPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _CurvedNavBarPainter oldDelegate) =>
       oldDelegate.notchCenterX != notchCenterX ||
+      oldDelegate.notchRadius != notchRadius ||
+      oldDelegate.filletRadius != filletRadius ||
       oldDelegate.backgroundColor != backgroundColor ||
       oldDelegate.borderColor != borderColor;
 }
@@ -1404,7 +1732,7 @@ class _DashboardBodyState extends State<_DashboardBody> {
 
   Widget _buildMembersClientsCarousel() {
     final c = context.colors;
-    final users = PhStore.instance.users.values.toList()
+    final users = PhStore.instance.companyUsers
       ..sort((a, b) {
         if (a.isClient != b.isClient) return a.isClient ? 1 : -1;
         return a.name.toLowerCase().compareTo(b.name.toLowerCase());

@@ -6,6 +6,7 @@ import '../data/billing_repository.dart';
 import '../data/shift_repository.dart';
 import '../data/task_repository.dart';
 import '../data/attendance_repository.dart';
+import '../data/ai_assistant_repository.dart';
 import '../data/chat_remote.dart';
 import '../data/ph_store.dart';
 import '../services/push_notification_service.dart';
@@ -43,4 +44,5 @@ void clearAccountData() {
   TaskRepository.instance.replaceAll(const []);
   AttendanceRepository.instance.clear();
   ChatRepository.instance.clear();
+  AiAssistantRepository.instance.clear();
 }

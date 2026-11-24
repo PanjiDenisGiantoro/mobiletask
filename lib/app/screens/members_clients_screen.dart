@@ -45,7 +45,7 @@ class _MembersClientsScreenState extends State<MembersClientsScreen> {
   }
 
   List<PhUser> get _allUsers {
-    final list = _store.users.values.toList();
+    final list = _store.companyUsers;
     list.sort((a, b) {
       if (a.isClient != b.isClient) return a.isClient ? 1 : -1;
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());

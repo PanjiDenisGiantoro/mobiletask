@@ -30,9 +30,38 @@ class PhStore extends ChangeNotifier {
   /// Pengguna dari server (users.id sebagai string), diisi saat sync.
   final Map<String, PhUser> users = {};
 
+  /// ID company aktif milik user yang sedang login.
+  static String get activeCompanyId {
+    final raw = AuthRepository.instance.currentUser?.raw;
+    final comp = raw?['company'];
+    final cid = raw?['company_id'] ?? (comp is Map ? comp['id'] : null);
+    if (cid == null || '$cid' == 'null') return '';
+    return '$cid'.trim();
+  }
+
   String nameOf(String id) => users[id]?.name ?? '-';
-  List<PhUser> get staff => users.values.where((u) => !u.isClient).toList();
-  List<PhUser> get clients => users.values.where((u) => u.isClient).toList();
+
+  /// Daftar user (Member & Client) yang hanya berasal dari company aktif.
+  List<PhUser> get companyUsers {
+    final cid = activeCompanyId;
+    if (cid.isEmpty) return users.values.toList();
+    final projectMemberIds = <String>{
+      meId,
+      for (final p in projects) ...[
+        if (p.managerId.isNotEmpty) p.managerId,
+        if (p.clientId.isNotEmpty) p.clientId,
+        for (final m in p.members)
+          if (m.userId.isNotEmpty) m.userId,
+      ],
+    };
+    return users.values.where((u) {
+      if (u.companyId.isNotEmpty) return u.companyId == cid;
+      return projectMemberIds.contains(u.id);
+    }).toList();
+  }
+
+  List<PhUser> get staff => companyUsers.where((u) => !u.isClient).toList();
+  List<PhUser> get clients => companyUsers.where((u) => u.isClient).toList();
 
   void changed() => notifyListeners();
 

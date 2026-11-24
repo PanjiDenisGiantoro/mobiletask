@@ -12,6 +12,7 @@ class PhUser {
   final List<String> images;
   final String joinedAt;
   final String role;
+  final String companyId;
   const PhUser(
     this.id,
     this.name, {
@@ -23,6 +24,7 @@ class PhUser {
     this.images = const [],
     this.joinedAt = '',
     this.role = '',
+    this.companyId = '',
   });
 }
 

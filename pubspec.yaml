@@ -102,10 +102,19 @@ flutter:
 
   assets:
     - assets/images/flovig_logo.png
+    - assets/images/flovig_launcher_icon.png
     - assets/images/banner_flovig_workspace.jpg
     - assets/images/banner_flovig_features.jpg
     - assets/images/banner_flovig_promo.jpg
     - assets/images/welcome_center_bg.jpg
+    - assets/images/splash_office_3d.jpg
+    - assets/images/splash_card_it.jpg
+    - assets/images/splash_card_sales.jpg
+    - assets/images/splash_card_accounting.jpg
+    - assets/images/splash_card_calendar.jpg
+    - assets/images/splash_card_team.jpg
+    - assets/images/splash_card_tickets.jpg
+    - assets/images/runa_ai_avatar.png
     - assets/icons/
     - assets/icons/illustrations/
     - assets/lottie/

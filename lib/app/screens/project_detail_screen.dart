@@ -344,6 +344,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> with SingleTi
       ('assets/icons/illustrations/review.svg', 'Tiket', '$ticketCount Tiket', 10, AppColors.error),
     ];
 
+    final c = context.colors;
     return PhCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -354,28 +355,28 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> with SingleTi
               Container(
                 width: 7,
                 height: 7,
-                decoration: const BoxDecoration(color: AppColors.primary700, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: c.primary, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Modul & Menu Proyek', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.grey900)),
-                    SizedBox(height: 1),
-                    Text('Akses cepat ke seluruh fitur dan ruang kerja proyek', style: TextStyle(fontSize: 11.5, color: AppColors.grey500)),
+                    Text('Modul & Menu Proyek', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: c.textPrimary)),
+                    const SizedBox(height: 1),
+                    Text('Akses cepat ke seluruh fitur dan ruang kerja proyek', style: TextStyle(fontSize: 11.5, color: c.textMuted)),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.primary50,
+                  color: c.primarySoft,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '${items.length} Modul',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary700),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.primary),
                 ),
               ),
             ],
@@ -389,32 +390,46 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> with SingleTi
               crossAxisCount: 2,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              mainAxisExtent: 64,
+              mainAxisExtent: 68,
             ),
             itemBuilder: (context, i) {
               final (svgAsset, label, subtitle, index, color) = items[i];
               return Material(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(14),
+                color: c.surfaceAlt,
+                borderRadius: BorderRadius.circular(16),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   onTap: () => _tab.animateTo(index),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: c.border),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 44,
+                          height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(color: color.withValues(alpha: 0.18)),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                color.withValues(alpha: 0.08),
+                                color.withValues(alpha: 0.20),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: color.withValues(alpha: 0.24)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.10),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           padding: const EdgeInsets.all(8),
                           child: SvgPicture.asset(svgAsset, fit: BoxFit.contain),
@@ -429,10 +444,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> with SingleTi
                                 label,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
+                                  color: c.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -440,10 +455,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> with SingleTi
                                 subtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF64748B),
+                                  color: c.textMuted,
                                 ),
                               ),
                             ],
@@ -455,9 +470,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> with SingleTi
                           height: 22,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: c.surface,
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            border: Border.all(color: c.border),
                           ),
                           child: Icon(Icons.chevron_right_rounded, size: 15, color: color),
                         ),

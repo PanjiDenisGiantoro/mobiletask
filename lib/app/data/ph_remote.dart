@@ -906,6 +906,12 @@ extension PhRemote on PhStore {
     final joinedAt = rawJoined.isNotEmpty ? rawJoined : (prev?.joinedAt ?? '');
     final rawRole = roles.isNotEmpty ? roles.first : '${json['role'] ?? ''}'.trim();
     final role = rawRole.isNotEmpty ? rawRole : (prev?.role ?? '');
+    final compObj = json['company'] ?? extra?['company'];
+    final rawCompId = json['company_id'] ??
+        (compObj is Map ? compObj['id'] : null) ??
+        extra?['company_id'];
+    final compIdStr = rawCompId == null || '$rawCompId' == 'null' ? '' : '$rawCompId'.trim();
+    final companyId = compIdStr.isNotEmpty ? compIdStr : (prev?.companyId ?? '');
     final rawStatus = '${json['status'] ?? extra?['status'] ?? ''}'.toLowerCase().trim();
     final rawActive = json['is_active'] ?? json['active'] ?? extra?['is_active'] ?? extra?['active'];
     final isActive = rawActive == false || rawActive == 0 || rawStatus == 'inactive' || rawStatus == 'nonaktif' || rawStatus == 'suspended'
@@ -924,6 +930,7 @@ extension PhRemote on PhStore {
       images: uniqueImgs,
       joinedAt: joinedAt,
       role: role,
+      companyId: companyId,
     );
     return id;
   }
@@ -1001,12 +1008,19 @@ extension PhRemote on PhStore {
 
   Future<void> _loadUsers() async {
     try {
+      final cid = PhStore.activeCompanyId;
+      final usersPath = cid.isNotEmpty ? '/users?company_id=$cid' : '/users';
       final results = await Future.wait<dynamic>([
-        _api.getAll('/users').catchError((_) => <Map<String, dynamic>>[]),
+        _api.getAll(usersPath).catchError((_) => <Map<String, dynamic>>[]),
         _api.get('/hris/employees').catchError((_) => const <dynamic>[]),
       ]);
       for (final u in (results[0] as List)) {
-        if (u is Map) upsertPhUser(u);
+        if (u is Map) {
+          final compObj = u['company'];
+          final rawCid = '${u['company_id'] ?? (compObj is Map ? compObj['id'] : '') ?? ''}'.trim();
+          if (cid.isNotEmpty && rawCid.isNotEmpty && rawCid != 'null' && rawCid != cid) continue;
+          upsertPhUser(u);
+        }
       }
       final empRes = results[1];
       final empList = empRes is List
@@ -1014,7 +1028,12 @@ extension PhRemote on PhStore {
           : (empRes is Map ? (empRes['employees'] ?? empRes['data']) : null);
       if (empList is List) {
         for (final e in empList) {
-          if (e is Map) upsertPhUser(e);
+          if (e is Map) {
+            final compObj = e['company'];
+            final rawCid = '${e['company_id'] ?? (compObj is Map ? compObj['id'] : '') ?? ''}'.trim();
+            if (cid.isNotEmpty && rawCid.isNotEmpty && rawCid != 'null' && rawCid != cid) continue;
+            upsertPhUser(e);
+          }
         }
       }
     } catch (_) {
